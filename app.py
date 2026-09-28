@@ -1,9 +1,31 @@
 import streamlit as st
 import json
+import os
 import pandas as pd
 from datetime import datetime, timedelta
 
 st.set_page_config(page_title="Инфо-Мат УБТ Базасы", layout="centered")
+
+# JSON файл аты (деректер осы жерде сақталады)
+DB_FILE = "ubt_database.json"
+
+# Деректерді файлдан жүктеу функциясы
+def load_data():
+    if os.path.exists(DB_FILE):
+        try:
+            with open(DB_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return None
+    return None
+
+# Деректерді файлға автоматты түрде сақтау функциясы
+def save_data(tests_data):
+    try:
+        with open(DB_FILE, "w", encoding="utf-8") as f:
+            json.dump(tests_data, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        st.error(f"Сақтау қатесі: {e}")
 
 # Фонға сіз сұраған суретті толық қоятын CSS стилі
 st.markdown("""
@@ -60,7 +82,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Сессиялық айнымалыларды инициализациялау (бан және қателерді санау үшін)
+# Сессиялық айнымалыларды инициализациялау
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
@@ -75,22 +97,28 @@ if "wrong_attempts" not in st.session_state:
 if "ban_until" not in st.session_state:
     st.session_state.ban_until = None
 
+# Тесттерді жүктеу (Егер файлда бар болса файлдан алады, жоқ болса әдепкі мәліметті жазады)
+saved_tests = load_data()
 if "tests" not in st.session_state:
-    st.session_state.tests = [
-        {
-            "id": 1,
-            "subject": "Қазақстан тарихы",
-            "title": "Қазақстан тарихы: Ежелгі кезең",
-            "questions": [
-                {
-                    "question": "Көне түркі жазба ескерткіштерінің ішіндегі ең ірісі:",
-                    "options": ["Күлтегін", "Тоныкөк", "Билге қаған", "Махмұт Қашғари"],
-                    "correct": 0,
-                    "image": None
-                }
-            ]
-        }
-    ]
+    if saved_tests is not None:
+        st.session_state.tests = saved_tests
+    else:
+        st.session_state.tests = [
+            {
+                "id": 1,
+                "subject": "Қазақстан тарихы",
+                "title": "Қазақстан тарихы: Ежелгі кезең",
+                "questions": [
+                    {
+                        "question": "Көне түркі жазба ескерткіштерінің ішіндегі ең ірісі:",
+                        "options": ["Күлтегін", "Тоныкөк", "Билге қаған", "Махмұт Қашғари"],
+                        "correct": 0,
+                        "image": None
+                    }
+                ]
+            }
+        ]
+        save_data(st.session_state.tests)
 
 if "results" not in st.session_state:
     st.session_state.results = []
@@ -107,7 +135,7 @@ if "math_lit_score_history" not in st.session_state:
 if "history_score_history" not in st.session_state:
     st.session_state.history_score_history = []
 
-# ----------------- ЛОГИН ЭКРАНЫ (БАН ЖӘНЕ ПАРОЛЬ ЛОГИКАСЫ) -----------------
+# ----------------- ЛОГИН ЭКРАНЫ (HELLO пароль және 1 сағат бан) -----------------
 if not st.session_state.logged_in:
     st.write("")
     st.write("")
@@ -117,13 +145,11 @@ if not st.session_state.logged_in:
     with col_l2:
         st.markdown("<p style='text-align: center; font-size: 26px; margin-bottom: 25px;'><b>Ahmadjan Hello!</b></p>", unsafe_allow_html=True)
         
-        # Бан уақытын тексеру
         if st.session_state.ban_until and datetime.now() < st.session_state.ban_until:
             remaining_time = int((st.session_state.ban_until - datetime.now()).total_seconds() / 60)
             st.error(f"⚠️ Тым көп қате енгізілді! Сіз 1 сағатқа блокталдыңыз. Қалған уақыт: шамамен {remaining_time + 1} минут.")
             st.stop()
         elif st.session_state.ban_until and datetime.now() >= st.session_state.ban_until:
-            # Бан уақыты бітсе қалпына келтіру
             st.session_state.ban_until = None
             st.session_state.wrong_attempts = 0
 
@@ -308,12 +334,10 @@ else:
     st.sidebar.markdown("---")
     st.sidebar.markdown("<p style='font-size: 16px; margin-bottom: 8px;'><b>Мәзір</b></p>", unsafe_allow_html=True)
 
-    # Негізгі кнопкалар
     if st.sidebar.button("📁 Тесттер тізімі", key="btn_tests", use_container_width=True):
         st.session_state.current_page = "Тесттер тізімі"
         st.rerun()
 
-    # 140 балдық статистика мен пәндерді біріктіріп шығатын ашылмалы панель (Expander)
     with st.sidebar.expander("📊 140 балдық статистика", expanded=False):
         stat_pages = [
             "Жалпы 140 балдық статистика",
@@ -377,6 +401,7 @@ else:
                     with col2:
                         if st.button("Өшіру", key=f"del_{test['id']}"):
                             st.session_state.tests = [t for t in st.session_state.tests if t["id"] != test["id"]]
+                            save_data(st.session_state.tests)
                             st.rerun()
                     st.markdown("---")
 
@@ -527,7 +552,6 @@ else:
                 }
                 if existing:
                     existing["questions"].append(new_q)
-                    st.success("Сұрақ тестке сәтті қосылды!")
                 else:
                     new_test = {
                         "id": len(st.session_state.tests) + 1,
@@ -536,7 +560,10 @@ else:
                         "questions": [new_q]
                     }
                     st.session_state.tests.append(new_test)
-                    st.success("Жаңа тест пен сұрақ сәтті қосылды!")
+                
+                # Файлға автоматты түрде сақтау
+                save_data(st.session_state.tests)
+                st.success("Сұрақ пен тест бұлтқа (файылға) сәтті сақталды!")
             else:
                 st.error("Барлық өрістерді толтырыңыз!")
 
@@ -555,6 +582,7 @@ else:
                     with col_del_q:
                         if st.button("🗑️ Жою", key=f"del_q_{t['id']}_{q_i}"):
                             t["questions"].pop(q_i)
+                            save_data(st.session_state.tests)
                             st.rerun()
                 st.markdown("---")
         else:
@@ -576,7 +604,9 @@ else:
                 loaded_tests = json.load(uploaded_file)
                 if isinstance(loaded_tests, list):
                     st.session_state.tests = loaded_tests
-                    st.success("Деректер сәтті жүктелді!")
+                    save_data(st.session_state.tests)
+                    st.success("Деректер сәтті жүктелді және сақталды!")
+                    st.rerun()
                 else:
                     st.error("Формат қате!")
             except Exception as e:
