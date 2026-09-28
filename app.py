@@ -28,7 +28,7 @@ st.markdown("""
         color: #00FF66;
         border: 1px solid #00FF66;
         border-radius: 4px;
-        padding: 6px 12px;
+        padding: 8px 12px;
         font-size: 14px;
         width: 100%;
         margin-bottom: 5px;
@@ -66,6 +66,11 @@ if "tests" not in st.session_state:
                     "question": "Көне түркі жазба ескерткіштерінің ішіндегі ең ірісі:",
                     "options": ["Күлтегін", "Тоныкөк", "Билге қаған", "Махмұт Қашғари"],
                     "correct": 0
+                },
+                {
+                    "question": "Қарлұқ қағанаты өмір сүрген жылдар:",
+                    "options": ["704–940 жж.", "552–603 жж.", "942–1212 жж.", "1465–1847 жж."],
+                    "correct": 0
                 }
             ]
         }
@@ -74,33 +79,65 @@ if "tests" not in st.session_state:
 if "results" not in st.session_state:
     st.session_state.results = []
 
-# Егер тест басталса, тек тест экраны көрінеді (сайдбар мен басқалар жасырылады)
+# Егер тест басталса
 if "active_test" in st.session_state and st.session_state.active_test:
     test = st.session_state.active_test
     st.header(f"Тест: {test['title']}")
     
+    if "q_index" not in st.session_state:
+        st.session_state.q_index = 0
+    if "user_answers" not in st.session_state:
+        st.session_state.user_answers = {}
+
     q_idx = st.session_state.q_index
-    if q_idx < len(test["questions"]):
+    total_questions = len(test["questions"])
+
+    if q_idx < total_questions:
         q = test["questions"][q_idx]
-        st.subheader(f"Сұрақ {q_idx + 1}: {q['question']}")
+        st.subheader(f"Сұрақ {q_idx + 1} / {total_questions}: {q['question']}")
         st.write("Жауапты таңдаңыз:")
         
-        # Радио орнына батырмалар қолданылады (нүктесіз, таза түрінде)
+        current_selected = st.session_state.user_answers.get(q_idx)
+
         for i, option in enumerate(q["options"]):
-            if st.button(f"{i+1}) {option}", key=f"opt_{q_idx}_{i}"):
-                if i == q["correct"]:
-                    st.session_state.score += 1
-                st.session_state.q_index += 1
+            # Таңдалған жауапты ерекшелеу үшін түсін өзгерту
+            btn_label = f"✅ {option}" if current_selected == i else f"{i+1}) {option}"
+            if st.button(btn_label, key=f"opt_{q_idx}_{i}"):
+                st.session_state.user_answers[q_idx] = i
                 st.rerun()
                 
         st.markdown("---")
-        if st.button("Тесттен шығу (Мәзірге қайту)"):
+        
+        # Навигация батырмалары (Артқа / Келесі)
+        col_prev, col_next = st.columns(2)
+        with col_prev:
+            if q_idx > 0:
+                if st.button("⬅️ Артқа"):
+                    st.session_state.q_index -= 1
+                    st.rerun()
+        with col_next:
+            if q_idx < total_questions - 1:
+                if st.button("Келесі сұрақ ➡️"):
+                    st.session_state.q_index += 1
+                    st.rerun()
+            else:
+                if st.button("🏁 Тестті аяқтау"):
+                    st.session_state.q_index = total_questions
+                    st.rerun()
+
+        st.write("")
+        if st.button("❌ Тесттен шығу (Мәзірге қайту)"):
             del st.session_state.active_test
+            del st.session_state.user_answers
             st.rerun()
     else:
-        # Сертификат түріндегі қорытынды
-        score = st.session_state.score
-        total = len(test["questions"])
+        # Нәтижені есептеу
+        score = 0
+        for idx, q_data in enumerate(test["questions"]):
+            if st.session_state.user_answers.get(idx) == q_data["correct"]:
+                score += 1
+        
+        total = total_questions
         percent = int((score / total) * 100) if total > 0 else 0
         
         if not st.session_state.results or st.session_state.results[-1]["title"] != test["title"]:
@@ -111,6 +148,7 @@ if "active_test" in st.session_state and st.session_state.active_test:
                 "date": datetime.now().strftime("%Y-%m-%d %H:%M")
             })
 
+        # Сертификат
         st.markdown(f"""
             <div class="certificate">
                 <h2>🏆 СЕРТИФИКАТ 🏆</h2>
@@ -126,10 +164,11 @@ if "active_test" in st.session_state and st.session_state.active_test:
         st.write("")
         if st.button("Мәзірге қайту"):
             del st.session_state.active_test
+            del st.session_state.user_answers
             st.rerun()
             
 else:
-    # Сайдбар бөлімі (тест жүріп жатпаған кезде ғана көрінеді)
+    # Сайдбар бөлімі (тест жүріп жатпаған кезде)
     st.sidebar.markdown("<p style='font-size: 13px; margin-bottom: 2px;'><b>Профиль</b></p>", unsafe_allow_html=True)
     col_img, col_name = st.sidebar.columns([1, 3])
     with col_img:
@@ -168,7 +207,7 @@ else:
                         if st.button("Бастау", key=f"start_{test['id']}"):
                             st.session_state.active_test = test
                             st.session_state.q_index = 0
-                            st.session_state.score = 0
+                            st.session_state.user_answers = {}
                             st.rerun()
                     with col2:
                         if st.button("Өшіру", key=f"del_{test['id']}"):
