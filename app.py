@@ -3,12 +3,45 @@ from datetime import datetime
 
 st.set_page_config(page_title="Инфо-Мат УБТ Базасы", layout="centered")
 
+# Қара түсті және жасыл элементтерге арналған CSS стилі
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #121212;
+        color: #00FF66;
+    }
+    [data-testid="stSidebar"] {
+        background-color: #1A1A1A;
+        padding-top: 10px;
+    }
+    [data-testid="stSidebar"] * {
+        color: #00FF66 !important;
+    }
+    h1, h2, h3, p, label {
+        color: #00FF66 !important;
+    }
+    .stButton>button {
+        background-color: #222222;
+        color: #00FF66;
+        border: 1px solid #00FF66;
+        border-radius: 5px;
+    }
+    .stButton>button:hover {
+        background-color: #00FF66;
+        color: #121212;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = "Аты-Жөніңіз"
 if "avatar" not in st.session_state:
-    st.session_state.avatar = "https://via.placeholder.com/80"
+    st.session_state.avatar = "https://via.placeholder.com/50"
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "Тесттер тізімі"
+
 if "tests" not in st.session_state:
     st.session_state.tests = [
         {
@@ -87,17 +120,27 @@ if not st.session_state.logged_in:
         else:
             st.error("Қате логин немесе пароль!")
 else:
-    # Профиль фотосы мен аты-жөні сайдбар шетінде қатар орналасады
-    st.sidebar.markdown("### Профиль")
-    col_img, col_name = st.sidebar.columns([1, 2])
+    # Сайдбарды ықшамдап, фото мен аты-жөнді кішірейтіп орналастыру[cite: 3]
+    st.sidebar.markdown("#### Профиль")
+    col_img, col_name = st.sidebar.columns([1, 3])
     with col_img:
-        st.image(st.session_state.avatar, width=60)
+        st.image(st.session_state.avatar, width=40)
     with col_name:
-        st.markdown(f"**{st.session_state.username}**")
+        st.markdown(f"<p style='font-size: 14px; margin: 0;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
     
     st.sidebar.markdown("---")
+    st.sidebar.markdown("**Мәзір**")
     
-    menu = st.sidebar.radio("Мәзір", ["Тесттер тізімі", "Сұрақ қосу", "Менің нәтижелерім", "Профильді баптау", "Шығу"])
+    # Нүктесіз, батырма түрінде жасалған автоматты ауысатын мәзір[cite: 3]
+    pages = ["Тесттер тізімі", "Сұрақ қосу", "Менің нәтижелерім", "Профильді баптау", "Шығу"]
+    for p in pages:
+        if st.sidebar.button(p, key=f"btn_{p}", use_container_width=True):
+            st.session_state.current_page = p
+            if "active_test" in st.session_state:
+                del st.session_state.active_test
+            st.rerun()
+
+    menu = st.session_state.current_page
     
     if menu == "Шығу":
         st.session_state.logged_in = False
