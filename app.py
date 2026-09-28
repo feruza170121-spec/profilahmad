@@ -5,15 +5,15 @@ from datetime import datetime
 
 st.set_page_config(page_title="Инфо-Мат УБТ Базасы", layout="centered")
 
-# Қара түсті және жасыл элементтерге арналған CSS стилі
+# Қаракөлеңке (қап-қара) фон және жасыл элементтерге арналған CSS стилі
 st.markdown("""
     <style>
     .stApp {
-        background-color: #121212;
+        background-color: #000000;
         color: #00FF66;
     }
     [data-testid="stSidebar"] {
-        background-color: #1A1A1A;
+        background-color: #0b0b0b;
         padding-top: 15px;
         width: 350px !important;
     }
@@ -24,7 +24,7 @@ st.markdown("""
         color: #00FF66 !important;
     }
     .stButton>button {
-        background-color: #222222;
+        background-color: #111111;
         color: #00FF66;
         border: 1px solid #00FF66;
         border-radius: 4px;
@@ -35,10 +35,10 @@ st.markdown("""
     }
     .stButton>button:hover {
         background-color: #00FF66;
-        color: #121212;
+        color: #000000;
     }
     .certificate {
-        background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+        background: linear-gradient(135deg, #111111 0%, #000000 100%);
         border: 4px solid #00FF66;
         padding: 60px;
         border-radius: 20px;
@@ -102,34 +102,32 @@ if "score_140_history" not in st.session_state:
         {"test_list": "Нұсқа №3", "score": 115}
     ]
 
-# ----------------- ЛОГИН ЭКРАНЫ (Дизайн бойынша) -----------------
+# ----------------- ЛОГИН ЭКРАНЫ -----------------
 if not st.session_state.logged_in:
-    st.markdown("<h1 style='text-align: center;'>💻 Компьютерді құлыптан босату</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #00FF66; margin-bottom: 30px;'>Жүйеге толық кіру үшін ПК паролін (немесе PIN-код) енгізіңіз. (Әдепкі пароль: 7777)</p>", unsafe_allow_html=True)
+    st.write("")
+    st.write("")
     
-    # Hello Ahmad және профильді кіру экранына шығару
     col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
     with col_l2:
-        st.markdown("<p style='font-size: 24px; text-align: center;'><b>Hello Ahmad</b></p>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size: 26px; text-align: center;'><b>Hello Ahmad</b></p>", unsafe_allow_html=True)
         st.image(st.session_state.avatar, width=150)
-        st.markdown(f"<p style='text-align: center; font-size: 18px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; font-size: 18px; margin-bottom: 20px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
         
         with st.form("login_form"):
             entered_password = st.text_input("ПК паролі / PIN-код", type="password")
             submit_login = st.form_submit_button("Құлпын ашу")
             
             if submit_login:
-                if entered_password == "7777":  # Парольді осы жерден өзгертуге болады
+                if entered_password == "7777":
                     st.session_state.logged_in = True
                     st.rerun()
                 else:
                     st.error("Қате пароль! Әдепкі пароль: 7777")
                     
-    st.stop() # Жүйеге кірмейінше ары қарайғы код оқылмайды
+    st.stop()
 
 # ----------------- НЕГІЗГІ ҚОСЫМША -----------------
 
-# Егер тест басталса
 if "active_test" in st.session_state and st.session_state.active_test:
     test = st.session_state.active_test
     st.header(f"Тест: {test['title']}")
@@ -252,7 +250,6 @@ else:
         st.session_state.logged_in = False
         st.rerun()
 
-    # --- 140 балдық нәтижелер бөлімі сайдбарда ---
     st.sidebar.markdown("---")
     st.sidebar.markdown("<p style='font-size: 18px; color: #00FF66; margin-bottom: 5px;'>🎯 <b>140 алған балдар</b></p>", unsafe_allow_html=True)
     
@@ -405,11 +402,29 @@ else:
             st.dataframe(subj_df[["Тест атауы", "Ұпай", "Күні"]], use_container_width=True)
 
     elif menu == "Профильді баптау":
-        st.header("Профильді өңдеу")
-        new_name = st.text_input("Аты-жөніңіз", st.session_state.username)
-        new_avatar = st.text_input("Аватар сурет сілтемесі (URL)", st.session_state.avatar)
-        if st.button("Сақтау"):
-            st.session_state.username = new_name
-            st.session_state.avatar = new_avatar
-            st.success("Профиль сәтті жаңартылды!")
-            st.rerun()
+        st.header("Профильді және Аватарды баптау")
+        
+        with st.form("profile_form"):
+            new_name = st.text_input("Аты-жөніңіз", st.session_state.username)
+            
+            st.write("Аватарды ауыстыру:")
+            avatar_option = st.radio("Әдісті таңдаңыз:", ["Дайын аватарлардың бірін таңдау", "Өз суретіңіздің сілтемесін (URL) енгізу"])
+            
+            preset_avatars = {
+                "Хакер бас сүйегі": "https://static.vecteezy.com/system/resources/previews/003/181/982/non_2x/cyber-hacker-attack-background-skull-vector.jpg",
+                "Кибернетикалық робот": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=60",
+                "Ноутбук / Программист": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=500&auto=format&fit=crop&q=60"
+            }
+            
+            if avatar_option == "Дайын аватарлардың бірін таңдау":
+                selected_preset = st.selectbox("Аватарды таңдаңыз:", list(preset_avatars.keys()))
+                new_avatar = preset_avatars[selected_preset]
+            else:
+                new_avatar = st.text_input("Сурет сілтемесі (URL)", st.session_state.avatar)
+            
+            submitted_profile = st.form_submit_button("Өзгерістерді сақтау")
+            if submitted_profile:
+                st.session_state.username = new_name
+                st.session_state.avatar = new_avatar
+                st.success("Профиль мен аватар сәтті жаңартылды!")
+                st.rerun()
