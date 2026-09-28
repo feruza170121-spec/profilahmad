@@ -5,7 +5,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="Инфо-Мат УБТ Базасы", layout="centered")
 
-# Фонға суретті қоюға арналған CSS стилі
+# Фонға сіз сұраған суретті толық қоятын CSS стилі
 st.markdown("""
     <style>
     .stApp {
