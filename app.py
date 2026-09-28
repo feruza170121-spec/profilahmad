@@ -95,9 +95,9 @@ if "results" not in st.session_state:
 # 140 баллдық трекерге арналған сақтау орны
 if "score_140_history" not in st.session_state:
     st.session_state.score_140_history = [
-        {"attempt": "1-ші сынақ", "score": 85},
-        {"attempt": "2-ші сынақ", "score": 98},
-        {"attempt": "3-ші сынақ", "score": 115}
+        {"test_list": "№1 Нұсқа (Мұғалім)", "score": 85},
+        {"test_list": "№2 Нұсқа (ҰБТ формат)", "score": 98},
+        {"test_list": "№3 Нұсқа (Жалпы)", "score": 115}
     ]
 
 # Егер тест басталса
@@ -218,17 +218,16 @@ else:
     st.sidebar.image(st.session_state.avatar, width=120)
     st.sidebar.markdown(f"<p style='font-size: 22px; margin-top: 5px; margin-bottom: 10px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
     
-    # --- 140 балдық нәтижелер бөлімі сайдбарда ---
+    # --- 140 балдық нәтижелер бөлімі сайдбарда («Тесттер тізімі» қосылды) ---
     st.sidebar.markdown("---")
     st.sidebar.markdown("<p style='font-size: 18px; color: #00FF66; margin-bottom: 5px;'>🎯 <b>140 алған балдар</b></p>", unsafe_allow_html=True)
     
-    # Балл қосу формасы
     with st.sidebar.form("add_140_score"):
-        new_attempt_name = st.text_input("Тест атауы / Реті", f"Қорытынды №{len(st.session_state.score_140_history)+1}")
+        test_list_input = st.text_input("Тесттер тізімі", f"Нұсқа №{len(st.session_state.score_140_history)+1}")
         new_score = st.number_input("Жинаған балл (макс 140)", min_value=0, max_value=140, value=100)
         submitted_score = st.form_submit_button("Баллды қосу")
         if submitted_score:
-            st.session_state.score_140_history.append({"attempt": new_attempt_name, "score": new_score})
+            st.session_state.score_140_history.append({"test_list": test_list_input, "score": new_score})
             st.rerun()
 
     st.sidebar.markdown("---")
@@ -249,9 +248,9 @@ else:
         st.subheader("📊 140 балдық жүйе бойынша сіздің өсу динамикаңыз")
         if st.session_state.score_140_history:
             df_140 = pd.DataFrame(st.session_state.score_140_history)
-            chart_df = df_140.set_index("attempt")[["score"]]
+            chart_df = df_140.set_index("test_list")[["score"]]
             st.line_chart(chart_df)
-            st.dataframe(df_140.rename(columns={"attempt": "Сынақ түрі", "score": "Жинаған балл"}), use_container_width=True)
+            st.dataframe(df_140.rename(columns={"test_list": "Тесттер тізімі", "score": "Жинаған балл"}), use_container_width=True)
         
         st.markdown("---")
         subjects = ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"]
