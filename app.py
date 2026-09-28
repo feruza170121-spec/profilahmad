@@ -138,11 +138,9 @@ if "active_test" in st.session_state and st.session_state.active_test:
     if "marked_questions" not in st.session_state:
         st.session_state.marked_questions = set()
     
-    # Таймерді іске қосу (Мысалы, барлық тестке 15 минут немесе сұрақ санына қарай)
     total_questions = len(test["questions"])
     
-    # Жоғарғы жақта тест барысы мен таймер имитациясы (Streamlit-те тұрақты таймер үшін сессия қолданылады)
-    st.info(⏱️ f"Барлық сұрақтар саны: {total_questions}. Асығыңыз!")
+    st.info(f"⏱️ Барлық сұрақтар саны: {total_questions}. Асығыңыз!")
 
     st.write("Сұрақтар нөмірі:")
     cols = st.columns(min(total_questions, 10))
@@ -210,7 +208,6 @@ if "active_test" in st.session_state and st.session_state.active_test:
             del st.session_state.marked_questions
             st.rerun()
     else:
-        # Нәтижені есептеу және тек қателерді жинау
         score = 0
         wrong_answers = []
         
@@ -249,7 +246,6 @@ if "active_test" in st.session_state and st.session_state.active_test:
             </div>
         """, unsafe_allow_html=True)
         
-        # Тек қате жіберген сұрақтарды шығару бөлімі
         st.markdown("---")
         if wrong_answers:
             st.subheader(f"❌ Сіз жіберген қателер талдауы ({len(wrong_answers)} қате):")
@@ -275,7 +271,6 @@ if "active_test" in st.session_state and st.session_state.active_test:
             st.rerun()
             
 else:
-    # Сайдбардағы Профиль және Мәзір
     st.sidebar.markdown("<p style='font-size: 32px; margin-bottom: 5px;'><b>Профиль</b></p>", unsafe_allow_html=True)
     
     st.sidebar.image(st.session_state.avatar, width=120)
@@ -494,8 +489,8 @@ else:
         selected_mgmt_subject = st.selectbox("Пәнді таңдаңыз:", ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"])
         
         mgmt_tests = [t for t in st.session_state.tests if t["subject"] == selected_mgmt_subject]
-        if notmgmt_tests := mgmt_tests:
-            for t_idx, t in enumerate(notmgmt_tests):
+        if mgmt_tests:
+            for t in mgmt_tests:
                 st.subheader(f"📁 {t['title']}")
                 for q_i, q in enumerate(t["questions"]):
                     col_q, col_del_q = st.columns([5, 1])
