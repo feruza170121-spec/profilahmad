@@ -228,12 +228,10 @@ elif menu == "Менің нәтижелерім":
     if not st.session_state.results:
         st.info("Әзірге тапсырылған тест нәтижелері жоқ. Тест тапсырып көріңіз!")
     else:
-        # Нәтижелерді пәндер бойынша топтастыру үшін тесттер тізімінен пәнін анықтаймыз
         test_subject_map = {t["title"]: t["subject"] for t in st.session_state.tests}
         
-        # Әр нәтижеге пән атауын қосамыз
         formatted_results = []
-            for r in st.session_state.results:
+        for r in st.session_state.results:
             subj = test_subject_map.get(r["title"], "Басқа пәндер")
             formatted_results.append({
                 "Пәні": subj,
@@ -243,20 +241,15 @@ elif menu == "Менің нәтижелерім":
             })
             
         df = pd.DataFrame(formatted_results)
-        
-        # Қолжетімді пәндер тізімі
         unique_subjects = df["Пәні"].unique()
         
         for subj in unique_subjects:
             st.subheader(f"📖 Пән: {subj}")
             subj_df = df[df["Пәні"] == subj]
             
-            # Сызықтық график көрсету (прогресс пен регрессті бақылау үшін)
-            # Графикте х осі ретінде реттік номер немесе күні қолданылады
             chart_data = subj_df.reset_index(drop=True)[["Ұпай"]]
             st.line_chart(chart_data)
             
-            # Деректер кестесін де қоса көрсетейік
             st.dataframe(subj_df[["Тест атауы", "Ұпай", "Күні"]], use_container_width=True)
             st.markdown("---")
 
