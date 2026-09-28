@@ -114,8 +114,8 @@ if not st.session_state.logged_in:
     
     col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
     with col_l2:
-        # Hello Ahmad және кіші сурет өшіріліп, тек аты-жөні мен форма қалдырілді
-        st.markdown(f"<p style='text-align: center; font-size: 22px; margin-bottom: 25px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
+        # Аты-жөні орнына Ahmadjan Hello! жазылды
+        st.markdown("<p style='text-align: center; font-size: 26px; margin-bottom: 25px;'><b>Ahmadjan Hello!</b></p>", unsafe_allow_html=True)
         
         with st.form("login_form"):
             entered_password = st.text_input("ПК паролі / PIN-код", type="password")
