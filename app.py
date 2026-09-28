@@ -106,13 +106,17 @@ if "tests" not in st.session_state:
 if "results" not in st.session_state:
     st.session_state.results = []
 
-# 140 балдық Жалпы статистика
+# Статистика тарихтары
 if "score_140_history" not in st.session_state:
     st.session_state.score_140_history = []
-
-# Математика пәніне арналған жеке 140 балдық статистика
 if "math_score_history" not in st.session_state:
     st.session_state.math_score_history = []
+if "info_score_history" not in st.session_state:
+    st.session_state.info_score_history = []
+if "math_lit_score_history" not in st.session_state:
+    st.session_state.math_lit_score_history = []
+if "history_score_history" not in st.session_state:
+    st.session_state.history_score_history = []
 
 # ----------------- ЛОГИН ЭКРАНЫ -----------------
 if not st.session_state.logged_in:
@@ -264,7 +268,18 @@ else:
     st.sidebar.markdown("---")
     st.sidebar.markdown("<p style='font-size: 18px; margin-bottom: 10px;'><b>Мәзір</b></p>", unsafe_allow_html=True)
 
-    pages = ["Тесттер тізімі", "140 балдық статистика", "Математика (Статистика & График)", "Сұрақ қосу", "Деректерді басқару (JSON)", "Менің нәтижелерім", "Профиль"]
+    pages = [
+        "Тесттер тізімі", 
+        "140 балдық статистика", 
+        "Математика (50 балл)", 
+        "Информатика (50 балл)", 
+        "Математикалық сауаттылық (10 балл)", 
+        "Қазақстан тарихы (20 балл)", 
+        "Сұрақ қосу", 
+        "Деректерді басқару (JSON)", 
+        "Менің нәтижелерім", 
+        "Профиль"
+    ]
     for p in pages:
         if st.sidebar.button(p, key=f"btn_{p}", use_container_width=True):
             st.session_state.current_page = p
@@ -304,7 +319,7 @@ else:
 
     elif menu == "140 балдық статистика":
         st.header("🎯 140 балдық жеке статистика және график")
-        st.write("Бұл жерде басында барлық мәлімет 0 болып тұрады. Төменден өз нәтижелеріңізді қосып, қажетсіздерін өшіре аласыз.")
+        st.write("Бұл жерде басында барлық мәлімет 0 болып тұрады. Графикте көк түспен Максималды балл (140) көрсетілген.")
         
         st.markdown("---")
         
@@ -314,67 +329,145 @@ else:
             new_score = st.number_input("Жинаған балл (макс 140)", min_value=0, max_value=140, value=0)
             submitted_score = st.form_submit_button("Баллды қосу")
             if submitted_score:
-                st.session_state.score_140_history.append({"test_list": test_list_input, "score": new_score})
+                st.session_state.score_140_history.append({"test_list": test_list_input, "score": new_score, "max_score": 140})
                 st.success("Балл сәтті қосылды!")
                 st.rerun()
                 
         st.markdown("---")
-        st.subheader("📊 Баллдардың өсу графигі")
+        st.subheader("📊 Баллдардың өсу графигі (Максималды баллмен)")
         
         if st.session_state.score_140_history:
             df_140 = pd.DataFrame(st.session_state.score_140_history)
-            chart_df = df_140.set_index("test_list")[["score"]]
-            st.line_chart(chart_df)
+            df_140["Макс балл"] = 140
+            chart_df = df_140.set_index("test_list")[["score", "Макс балл"]]
+            
+            # График түстері (score - жасыл немесе әдепкі, Макс балл - көк)
+            st.line_chart(chart_df, color=["#00FF66", "#0066FF"])
             
             st.subheader("📋 Енгізілген балдар тізімі (Жою мүмкіндігімен)")
             for idx, item in enumerate(st.session_state.score_140_history):
                 col_info, col_del = st.columns([4, 1])
                 with col_info:
-                    st.write(f"🔹 **{item['test_list']}** — Жинаған балл: **{item['score']}**")
+                    st.write(f"🔹 **{item['test_list']}** — Жинаған балл: **{item['score']}** / 140")
                 with col_del:
                     if st.button("🗑️ Өшіру", key=f"del_140_{idx}"):
                         st.session_state.score_140_history.pop(idx)
                         st.rerun()
                 st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
         else:
-            st.info("Әзірге балдар енгізілмеді (График 0 де тұр). Жоғарыдан өз нәтижеңізді енгізіңіз!")
+            st.info("Әзірге балдар енгізілмеді. Жоғарыдан өз нәтижеңізді енгізіңіз!")
 
-    elif menu == "Математика (Статистика & График)":
-        st.header("📐 Математика пәні бойынша 140 балдық статистика және график")
-        st.write("Бұл бетте басынан 0 болып тұратын Математика пәнінің жеке нәтижелерін енгізіп, өшіріп, графигін көре аласыз.")
+    elif menu == "Математика (50 балл)":
+        st.header("📐 Математика пәні бойынша статистика (Макс: 50 балл)")
+        st.write("Математика пәнінің жеке нәтижелерін енгізіп, өшіріп, көк сызықпен макс балл (50) көрсетілген графигін көре аласыз.")
         
         st.markdown("---")
-        
         with st.form("add_math_score_form"):
-            st.subheader("Математикадан жаңа нәтиже қосу")
-            math_test_input = st.text_input("Математика нұсқасы / Тест атауы", f"Математика Нұсқа №{len(st.session_state.math_score_history)+1}")
-            math_new_score = st.number_input("Математикадан жинаған балл (макс 140)", min_value=0, max_value=140, value=0)
-            submitted_math_score = st.form_submit_button("Математика баллын қосу")
-            if submitted_math_score:
+            math_test_input = st.text_input("Математика нұсқасы", f"Мат. Нұсқа №{len(st.session_state.math_score_history)+1}")
+            math_new_score = st.number_input("Жиналған балл (макс 50)", min_value=0, max_value=50, value=0)
+            if st.form_submit_button("Математика баллын қосу"):
                 st.session_state.math_score_history.append({"test_list": math_test_input, "score": math_new_score})
-                st.success("Математика баллы сәтті қосылды!")
+                st.success("Қосылды!")
                 st.rerun()
                 
         st.markdown("---")
-        st.subheader("📊 Математика баллдарының өсу графигі")
-        
         if st.session_state.math_score_history:
             df_math = pd.DataFrame(st.session_state.math_score_history)
-            math_chart_df = df_math.set_index("test_list")[["score"]]
-            st.line_chart(math_chart_df)
+            df_math["Макс балл (50)"] = 50
+            st.line_chart(df_math.set_index("test_list")[["score", "Макс балл (50)"]], color=["#00FF66", "#0066FF"])
             
-            st.subheader("📋 Математика балдарының тізімі (Жою мүмкіндігімен)")
             for idx, item in enumerate(st.session_state.math_score_history):
-                col_info, col_del = st.columns([4, 1])
-                with col_info:
-                    st.write(f"🔹 **{item['test_list']}** — Математика балы: **{item['score']}**")
-                with col_del:
-                    if st.button("🗑️ Өшіру", key=f"del_math_{idx}"):
-                        st.session_state.math_score_history.pop(idx)
-                        st.rerun()
-                st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
+                c1, c2 = st.columns([4, 1])
+                c1.write(f"🔹 **{item['test_list']}** — Балл: **{item['score']}** / 50")
+                if c2.button("🗑️ Өшіру", key=f"del_m_{idx}"):
+                    st.session_state.math_score_history.pop(idx)
+                    st.rerun()
         else:
-            st.info("Математикадан әзірге балдар енгізілмеді (График 0 де тұр).")
+            st.info("Әзірге мәлімет жоқ.")
+
+    elif menu == "Информатика (50 балл)":
+        st.header("💻 Информатика пәні бойынша статистика (Макс: 50 балл)")
+        st.write("Информатика пәнінің нәтижелері және көк сызықпен макс балл (50) көрсетілген графигі.")
+        
+        st.markdown("---")
+        with st.form("add_info_score_form"):
+            info_test_input = st.text_input("Информатика нұсқасы", f"Инфо. Нұсқа №{len(st.session_state.info_score_history)+1}")
+            info_new_score = st.number_input("Жиналған балл (макс 50)", min_value=0, max_value=50, value=0)
+            if st.form_submit_button("Информатика баллын қосу"):
+                st.session_state.info_score_history.append({"test_list": info_test_input, "score": info_new_score})
+                st.success("Қосылды!")
+                st.rerun()
+                
+        st.markdown("---")
+        if st.session_state.info_score_history:
+            df_info = pd.DataFrame(st.session_state.info_score_history)
+            df_info["Макс балл (50)"] = 50
+            st.line_chart(df_info.set_index("test_list")[["score", "Макс балл (50)"]], color=["#00FF66", "#0066FF"])
+            
+            for idx, item in enumerate(st.session_state.info_score_history):
+                c1, c2 = st.columns([4, 1])
+                c1.write(f"🔹 **{item['test_list']}** — Балл: **{item['score']}** / 50")
+                if c2.button("🗑️ Өшіру", key=f"del_inf_{idx}"):
+                    st.session_state.info_score_history.pop(idx)
+                    st.rerun()
+        else:
+            st.info("Әзірге мәлімет жоқ.")
+
+    elif menu == "Математикалық сауаттылық (10 балл)":
+        st.header("📊 Математикалық сауаттылық статистикасы (Макс: 10 балл)")
+        st.write("Мат. сауаттылық нәтижелері және көк сызықпен макс балл (10) көрсетілген графигі.")
+        
+        st.markdown("---")
+        with st.form("add_math_lit_form"):
+            ml_test_input = st.text_input("Мат. сауаттылық нұсқасы", f"МатСау Нұсқа №{len(st.session_state.math_lit_score_history)+1}")
+            ml_new_score = st.number_input("Жиналған балл (макс 10)", min_value=0, max_value=10, value=0)
+            if st.form_submit_button("Баллды қосу"):
+                st.session_state.math_lit_score_history.append({"test_list": ml_test_input, "score": ml_new_score})
+                st.success("Қосылды!")
+                st.rerun()
+                
+        st.markdown("---")
+        if st.session_state.math_lit_score_history:
+            df_ml = pd.DataFrame(st.session_state.math_lit_score_history)
+            df_ml["Макс балл (10)"] = 10
+            st.line_chart(df_ml.set_index("test_list")[["score", "Макс балл (10)"]], color=["#00FF66", "#0066FF"])
+            
+            for idx, item in enumerate(st.session_state.math_lit_score_history):
+                c1, c2 = st.columns([4, 1])
+                c1.write(f"🔹 **{item['test_list']}** — Балл: **{item['score']}** / 10")
+                if c2.button("🗑️ Өшіру", key=f"del_ml_{idx}"):
+                    st.session_state.math_lit_score_history.pop(idx)
+                    st.rerun()
+        else:
+            st.info("Әзірге мәлімет жоқ.")
+
+    elif menu == "Қазақстан тарихы (20 балл)":
+        st.header("🇰🇿 Қазақстан тарихы статистикасы (Макс: 20 балл)")
+        st.write("Қазақстан тарихы нәтижелері және көк сызықпен макс балл (20) көрсетілген графигі.")
+        
+        st.markdown("---")
+        with st.form("add_history_form"):
+            hist_test_input = st.text_input("Тарих нұсқасы", f"Тарих Нұсқа №{len(st.session_state.history_score_history)+1}")
+            hist_new_score = st.number_input("Жиналған балл (макс 20)", min_value=0, max_value=20, value=0)
+            if st.form_submit_button("Баллды қосу"):
+                st.session_state.history_score_history.append({"test_list": hist_test_input, "score": hist_new_score})
+                st.success("Қосылды!")
+                st.rerun()
+                
+        st.markdown("---")
+        if st.session_state.history_score_history:
+            df_hist = pd.DataFrame(st.session_state.history_score_history)
+            df_hist["Макс балл (20)"] = 20
+            st.line_chart(df_hist.set_index("test_list")[["score", "Макс балл (20)"]], color=["#00FF66", "#0066FF"])
+            
+            for idx, item in enumerate(st.session_state.history_score_history):
+                c1, c2 = st.columns([4, 1])
+                c1.write(f"🔹 **{item['test_list']}** — Балл: **{item['score']}** / 20")
+                if c2.button("🗑️ Өшіру", key=f"del_hist_{idx}"):
+                    st.session_state.history_score_history.pop(idx)
+                    st.rerun()
+        else:
+            st.info("Әзірге мәлімет жоқ.")
                 
     elif menu == "Сұрақ қосу":
         st.header("Жаңа сұрақ немесе кезеңдік тест қосу")
