@@ -110,12 +110,12 @@ def main_app():
             st.warning("Әзірге тест сұрақтары жоқ.")
             return
             
-        # Қолжетімді пәндер тізімін жинау
-        subjects = list(set(q["subject"] for q in tests))
+        # Қолжетімді пәндер тізімін жинау (.get қолданылды, қате шықпайды)
+        subjects = list(set(q.get("subject", "Жалпы") for q in tests))
         selected_subject = st.selectbox("Пәнді таңдаңыз:", subjects)
         
         # Таңдалған пәннің сұрақтарын сүзу
-        subject_tests = [q for q in tests if q["subject"] == selected_subject]
+        subject_tests = [q for q in tests if q.get("subject", "Жалпы") == selected_subject]
         
         st.write(f"Таңдалған пән: **{selected_subject}** (Сұрақтар саны: {len(subject_tests)})")
         
@@ -183,7 +183,7 @@ def main_app():
         results = load_data(RESULTS_FILE)
         if results:
             for r in results:
-                st.write(f"👤 Қолданушы: **{r['user']}** | 📚 Пән: **{r['subject']}** | 🎯 Нәтиже: **{r['score']}**")
+                st.write(f"👤 Қолданушы: **{r['user']}** | 📚 Пән: **{r.get('subject', 'Жалпы')}** | 🎯 Нәтиже: **{r['score']}**")
         else:
             st.info("Әзірге сақталған нәтижелер жоқ.")
 
