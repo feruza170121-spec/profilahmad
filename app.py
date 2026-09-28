@@ -32,10 +32,10 @@ st.markdown("""
         color: #00FF66;
         border: 1px solid #00FF66;
         border-radius: 4px;
-        padding: 10px 14px;
-        font-size: 16px;
+        padding: 8px 12px;
+        font-size: 15px;
         width: 100%;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
     .stButton>button:hover {
         background-color: #00FF66;
@@ -271,20 +271,20 @@ if "active_test" in st.session_state and st.session_state.active_test:
             st.rerun()
             
 else:
-    st.sidebar.markdown("<p style='font-size: 32px; margin-bottom: 5px;'><b>Профиль</b></p>", unsafe_allow_html=True)
+    st.sidebar.markdown("<p style='font-size: 30px; margin-bottom: 5px;'><b>Профиль</b></p>", unsafe_allow_html=True)
     
-    st.sidebar.image(st.session_state.avatar, width=120)
-    st.sidebar.markdown(f"<p style='font-size: 22px; margin-top: 5px; margin-bottom: 10px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
+    st.sidebar.image(st.session_state.avatar, width=110)
+    st.sidebar.markdown(f"<p style='font-size: 20px; margin-top: 5px; margin-bottom: 10px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
 
-    if st.sidebar.button("🔒 Жүйеден шығу (Құлыптау)", use_container_width=True):
+    if st.sidebar.button("🔒 Жүйеден шығу", use_container_width=True):
         st.session_state.logged_in = False
         st.rerun()
 
     st.sidebar.markdown("---")
-    st.sidebar.markdown("<p style='font-size: 18px; margin-bottom: 10px;'><b>Мәзір</b></p>", unsafe_allow_html=True)
+    st.sidebar.markdown("<p style='font-size: 16px; margin-bottom: 8px;'><b>Мәзір</b></p>", unsafe_allow_html=True)
 
     # Негізгі кнопкалар
-    if st.sidebar.button("Тесттер тізімі", key="btn_tests", use_container_width=True):
+    if st.sidebar.button("📁 Тесттер тізімі", key="btn_tests", use_container_width=True):
         st.session_state.current_page = "Тесттер тізімі"
         st.rerun()
 
@@ -303,15 +303,24 @@ else:
                 st.rerun()
 
     other_pages = [
-        "Сұрақ қосу", 
-        "Сұрақтарды басқару", 
-        "Деректерді басқару (JSON)", 
-        "Менің нәтижелерім", 
-        "Профиль"
+        "➕ Сұрақ қосу", 
+        "⚙️ Сұрақтарды басқару", 
+        "💾 Деректерді басқару (JSON)", 
+        "📈 Менің нәтижелерім", 
+        "👤 Профиль"
     ]
+    
+    page_map = {
+        "➕ Сұрақ қосу": "Сұрақ қосу",
+        "⚙️ Сұрақтарды басқару": "Сұрақтарды басқару",
+        "💾 Деректерді басқару (JSON)": "Деректерді басқару (JSON)",
+        "📈 Менің нәтижелерім": "Менің нәтижелерім",
+        "👤 Профиль": "Профиль"
+    }
+
     for p in other_pages:
         if st.sidebar.button(p, key=f"btn_{p}", use_container_width=True):
-            st.session_state.current_page = p
+            st.session_state.current_page = page_map[p]
             st.rerun()
 
     menu = st.session_state.current_page
