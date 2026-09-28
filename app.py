@@ -110,14 +110,12 @@ def main_app():
             st.warning("Әзірге тест сұрақтары жоқ.")
             return
             
-        # Барлық сұрақтардан тек нақты пән аттарын жинау (жалпы дегенді алып тастап, таза пәндерді шығару)
         subjects = sorted(list(set(q.get("subject", "").strip() for q in tests if q.get("subject"))))
         
         if not subjects:
             st.warning("Базада пәндер көрсетілген сұрақтар жоқ.")
             return
 
-        # Егер тест басталмаған болса, пән таңдау экранға шығады
         if not st.session_state.test_started:
             st.subheader("Өзіңізге қажетті пәнді таңдаңыз:")
             selected = st.selectbox("Пән:", subjects, key="subject_select")
@@ -127,7 +125,6 @@ def main_app():
                 st.session_state.selected_subject = selected
                 st.rerun()
         else:
-            # Тест басталды, тек таңдалған пәннің сұрақтары шығады
             current_sub = st.session_state.selected_subject
             st.subheader(f"📚 Таңдалған пән: {current_sub}")
             
@@ -160,7 +157,6 @@ def main_app():
                     st.balloons()
                     st.success(f"Тест аяқталды! Сіздің нәтижеңіз ({current_sub}): {result_str}")
                     
-                    # Нәтижені JSON-ға сақтау
                     results = load_data(RESULTS_FILE)
                     results.append({
                         "user": st.session_state.username,
@@ -206,7 +202,6 @@ def main_app():
         with tab2:
             st.subheader("Жаңа сұрақ қосу")
             with st.form("add_question_form"):
-                # Пән атауын нақты жазу немесе таңдау
                 subject_input = st.selectbox("Пәнді таңдаңыз немесе жазыңыз:", ["Математика", "Информатика", "Физика", "Тарих", "Ағылшын тілі"])
                 custom_subject = st.text_input("Немесе жаңа пән атауын енгізіңіз (егер жоғарыда жоқ болса):")
                 
@@ -216,18 +211,19 @@ def main_app():
                 c3 = st.text_input("Нұсқа C")
                 c4 = st.text_input("Нұсқа D")
                 
-                correct_ans = st.text_input("Дұрыс жауап (A, B, C немесе D әрпін жазыңыз)")
+                # МТІН ЖАЗУДЫҢ ОРНЫНА ТАҢДАУҒА АЙНАЛДЫРУ (selectbox)
+                correct_ans_letter = st.selectbox("Дұрыс жауаптың әрпін таңдаңыз:", ["A", "B", "C", "D"])
                 
                 add_submitted = st.form_submit_button("Сұрақты сақтау")
                 
                 if add_submitted:
                     final_subject = custom_subject.strip() if custom_subject.strip() else subject_input
-                    if final_subject and new_q and c1 and c2 and correct_ans:
+                    if final_subject and new_q and c1 and c2:
                         options_dict = {"A": c1, "B": c2, "C": c3, "D": c4}
-                        selected_correct_text = options_dict.get(correct_ans.upper())
+                        selected_correct_text = options_dict.get(correct_ans_letter)
                         
                         if not selected_correct_text:
-                            st.error("Дұрыс жауап әрпі дұрыс көрсетілмеді (A, B, C немесе D болуы керек)!")
+                            st.error("Таңдалған әріпке сәйкес келетін нұсқа бос болмауы тиіс!")
                         else:
                             new_id = max([q["id"] for q in tests], default=0) + 1
                             new_question_data = {
@@ -241,7 +237,7 @@ def main_app():
                             save_data(TESTS_FILE, tests)
                             st.success("Сұрақ базаға сәтті қосылды!")
                     else:
-                        st.error("Барлық міндетті өрістерді толтырыңыз!")
+                        st.error("Пән, сұрақ және кем дегенде A мен B нұсқаларын толтырыңыз!")
 
     # 3. НӘТИЖЕЛЕРДІ КӨРУ
     elif menu == "Нәтижелер":
