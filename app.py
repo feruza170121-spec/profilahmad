@@ -5,7 +5,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="Инфо-Мат УБТ Базасы", layout="centered")
 
-# Қара түсті және жасыл элементтерге арналған CSS стилі (3D сертификатпен)
+# Қара түсті және жасыл элементтерге арналған CSS стилі
 st.markdown("""
     <style>
     .stApp {
@@ -14,8 +14,8 @@ st.markdown("""
     }
     [data-testid="stSidebar"] {
         background-color: #1A1A1A;
-        padding-top: 5px;
-        width: 220px !important;
+        padding-top: 15px;
+        width: 350px !important;
     }
     [data-testid="stSidebar"] * {
         color: #00FF66 !important;
@@ -28,10 +28,10 @@ st.markdown("""
         color: #00FF66;
         border: 1px solid #00FF66;
         border-radius: 4px;
-        padding: 8px 12px;
-        font-size: 14px;
+        padding: 10px 14px;
+        font-size: 16px;
         width: 100%;
-        margin-bottom: 5px;
+        margin-bottom: 8px;
     }
     .stButton>button:hover {
         background-color: #00FF66;
@@ -63,9 +63,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if "username" not in st.session_state:
-    st.session_state.username = "Аты-Жөніңіз"
+    st.session_state.username = "Тажиддинов Ахмаджан"
 if "avatar" not in st.session_state:
-    st.session_state.avatar = "https://via.placeholder.com/40"
+    st.session_state.avatar = "https://via.placeholder.com/90"
 if "current_page" not in st.session_state:
     st.session_state.current_page = "Тесттер тізімі"
 
@@ -179,15 +179,13 @@ if "active_test" in st.session_state and st.session_state.active_test:
             st.rerun()
             
 else:
-    st.sidebar.markdown("<p style='font-size: 13px; margin-bottom: 2px;'><b>Профиль</b></p>", unsafe_allow_html=True)
-    col_img, col_name = st.sidebar.columns([1, 3])
-    with col_img:
-        st.image(st.session_state.avatar, width=30)
-    with col_name:
-        st.markdown(f"<p style='font-size: 12px; margin: 0;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
+    # 3 есе үлкейтілген профиль бөлімі сайдбарда
+    st.sidebar.markdown("<p style='font-size: 36px; margin-bottom: 10px;'><b>Профиль</b></p>", unsafe_allow_html=True)
+    st.sidebar.image(st.session_state.avatar, width=120)
+    st.sidebar.markdown(f"<p style='font-size: 26px; margin-top: 10px; margin-bottom: 20px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
 
     st.sidebar.markdown("---")
-    st.sidebar.markdown("<p style='font-size: 13px; margin-bottom: 5px;'><b>Мәзір</b></p>", unsafe_allow_html=True)
+    st.sidebar.markdown("<p style='font-size: 18px; margin-bottom: 10px;'><b>Мәзір</b></p>", unsafe_allow_html=True)
 
     pages = ["Тесттер тізімі", "Сұрақ қосу", "Деректерді басқару (JSON)", "Менің нәтижелерім", "Профильді баптау"]
     for p in pages:
