@@ -1,33 +1,11 @@
 import streamlit as st
 import json
-import os
 import pandas as pd
 from datetime import datetime, timedelta
 
 st.set_page_config(page_title="Инфо-Мат УБТ Базасы", layout="centered")
 
-# JSON файл аты (деректер осы жерде сақталады)
-DB_FILE = "ubt_database.json"
-
-# Деректерді файлдан жүктеу функциясы
-def load_data():
-    if os.path.exists(DB_FILE):
-        try:
-            with open(DB_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except:
-            return None
-    return None
-
-# Деректерді файлға автоматты түрде сақтау функциясы
-def save_data(tests_data):
-    try:
-        with open(DB_FILE, "w", encoding="utf-8") as f:
-            json.dump(tests_data, f, ensure_ascii=False, indent=4)
-    except Exception as e:
-        st.error(f"Сақтау қатесі: {e}")
-
-# Фонға сіз сұраған суретті толық қоятын CSS стилі
+# Фон мен дизайн стилі
 st.markdown("""
     <style>
     .stApp {
@@ -82,7 +60,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Сессиялық айнымалыларды инициализациялау
+# Сессиялық жады (Session State) арқылы деректерді жоғалтпау тетігі
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
@@ -97,45 +75,33 @@ if "wrong_attempts" not in st.session_state:
 if "ban_until" not in st.session_state:
     st.session_state.ban_until = None
 
-# Тесттерді жүктеу (Егер файлда бар болса файлдан алады, жоқ болса әдепкі мәліметті жазады)
-saved_tests = load_data()
+# Негізгі тесттер тізімі (Егер бұрын сақталмаса бастапқы деректерді алады)
 if "tests" not in st.session_state:
-    if saved_tests is not None:
-        st.session_state.tests = saved_tests
-    else:
-        st.session_state.tests = [
-            {
-                "id": 1,
-                "subject": "Қазақстан тарихы",
-                "title": "Қазақстан тарихы: Ежелгі кезең",
-                "questions": [
-                    {
-                        "question": "Көне түркі жазба ескерткіштерінің ішіндегі ең ірісі:",
-                        "options": ["Күлтегін", "Тоныкөк", "Билге қаған", "Махмұт Қашғари"],
-                        "correct": 0,
-                        "image": None
-                    }
-                ]
-            }
-        ]
-        save_data(st.session_state.tests)
+    st.session_state.tests = [
+        {
+            "id": 1,
+            "subject": "Қазақстан тарихы",
+            "title": "Қазақстан тарихы: Ежелгі кезең",
+            "questions": [
+                {
+                    "question": "Көне түркі жазба ескерткіштерінің ішіндегі ең ірісі:",
+                    "options": ["Күлтегін", "Тоныкөк", "Билге қаған", "Махмұт Қашғари"],
+                    "correct": 0,
+                    "image": None
+                }
+            ]
+        }
+    ]
 
 if "results" not in st.session_state:
     st.session_state.results = []
 
 # Статистика тарихтары
-if "score_140_history" not in st.session_state:
-    st.session_state.score_140_history = []
-if "math_score_history" not in st.session_state:
-    st.session_state.math_score_history = []
-if "info_score_history" not in st.session_state:
-    st.session_state.info_score_history = []
-if "math_lit_score_history" not in st.session_state:
-    st.session_state.math_lit_score_history = []
-if "history_score_history" not in st.session_state:
-    st.session_state.history_score_history = []
+for hist_key in ["score_140_history", "math_score_history", "info_score_history", "math_lit_score_history", "history_score_history"]:
+    if hist_key not in st.session_state:
+        st.session_state[hist_key] = []
 
-# ----------------- ЛОГИН ЭКРАНЫ (HELLO пароль және 1 сағат бан) -----------------
+# ----------------- ЛОГИН ЭКРАНЫ -----------------
 if not st.session_state.logged_in:
     st.write("")
     st.write("")
@@ -277,13 +243,12 @@ if "active_test" in st.session_state and st.session_state.active_test:
         total = total_questions
         percent = int((score / total) * 100) if total > 0 else 0
         
-        if not st.session_state.results or st.session_state.results[-1]["title"] != test["title"]:
-            st.session_state.results.append({
-                "title": test["title"],
-                "score": score,
-                "total": total,
-                "date": datetime.now().strftime("%Y-%m-%d %H:%M")
-            })
+        st.session_state.results.append({
+            "title": test["title"],
+            "score": score,
+            "total": total,
+            "date": datetime.now().strftime("%Y-%m-%d %H:%M")
+        })
 
         st.markdown(f"""
             <div class="certificate">
@@ -322,7 +287,6 @@ if "active_test" in st.session_state and st.session_state.active_test:
             
 else:
     st.sidebar.markdown("<p style='font-size: 30px; margin-bottom: 5px;'><b>Профиль</b></p>", unsafe_allow_html=True)
-    
     st.sidebar.image(st.session_state.avatar, width=110)
     st.sidebar.markdown(f"<p style='font-size: 20px; margin-top: 5px; margin-bottom: 10px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
 
@@ -376,7 +340,6 @@ else:
 
     if menu == "Тесттер тізімі":
         st.header("Инфо-Мат Бағыты (Кезеңдерге бөлінген тесттер)")
-        
         st.markdown("---")
         subjects = ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"]
         selected_subject = st.selectbox("Бағытты / Пәнді таңдаңыз:", subjects)
@@ -401,14 +364,11 @@ else:
                     with col2:
                         if st.button("Өшіру", key=f"del_{test['id']}"):
                             st.session_state.tests = [t for t in st.session_state.tests if t["id"] != test["id"]]
-                            save_data(st.session_state.tests)
                             st.rerun()
                     st.markdown("---")
 
     elif menu == "Жалпы 140 балдық статистика":
         st.header("🎯 140 балдық жеке статистика және график")
-        
-        st.subheader("Жаңа нәтиже қосу")
         test_list_input = st.text_input("Тесттер тізімі / Нұсқа атауы", f"Нұсқа №{len(st.session_state.score_140_history)+1}", key="input_140_title")
         new_score = st.number_input("Жинаған балл (макс 140)", min_value=0, max_value=140, value=0, key="input_140_score")
         if st.button("Баллды қосу", key="btn_add_140"):
@@ -421,7 +381,6 @@ else:
             df_140 = pd.DataFrame(st.session_state.score_140_history)
             df_140["Макс балл"] = 140
             st.line_chart(df_140.set_index("test_list")[["score", "Макс балл"]], color=["#00FF66", "#0066FF"])
-            
             for idx, item in enumerate(st.session_state.score_140_history):
                 c1, c2 = st.columns([4, 1])
                 c1.write(f"🔹 **{item['test_list']}** — Балл: **{item['score']}** / 140")
@@ -433,7 +392,6 @@ else:
 
     elif menu == "Математика (50 балл)":
         st.header("📐 Математика пәні бойынша статистика (Макс: 50 балл)")
-        st.subheader("Жаңа нәтиже қосу")
         math_test_input = st.text_input("Математика нұсқасы", f"Мат. Нұсқа №{len(st.session_state.math_score_history)+1}", key="input_math_title")
         math_new_score = st.number_input("Жиналған балл (макс 50)", min_value=0, max_value=50, value=0, key="input_math_score")
         if st.button("Қосу", key="btn_add_math"):
@@ -457,7 +415,6 @@ else:
 
     elif menu == "Информатика (50 балл)":
         st.header("💻 Информатика пәні бойынша статистика (Макс: 50 балл)")
-        st.subheader("Жаңа нәтиже қосу")
         info_test_input = st.text_input("Информатика нұсқасы", f"Инфо. Нұсқа №{len(st.session_state.info_score_history)+1}", key="input_info_title")
         info_new_score = st.number_input("Жиналған балл (макс 50)", min_value=0, max_value=50, value=0, key="input_info_score")
         if st.button("Қосу", key="btn_add_info"):
@@ -481,7 +438,6 @@ else:
 
     elif menu == "Математикалық сауаттылық (10 балл)":
         st.header("📊 Математикалық сауаттылық статистикасы (Макс: 10 балл)")
-        st.subheader("Жаңа нәтиже қосу")
         ml_test_input = st.text_input("Мат. сауаттылық нұсқасы", f"МатСау Нұсқа №{len(st.session_state.math_lit_score_history)+1}", key="input_ml_title")
         ml_new_score = st.number_input("Жиналған балл (макс 10)", min_value=0, max_value=10, value=0, key="input_ml_score")
         if st.button("Қосу", key="btn_add_ml"):
@@ -505,7 +461,6 @@ else:
 
     elif menu == "Қазақстан тарихы (20 балл)":
         st.header("🇰🇿 Қазақстан тарихы статистикасы (Макс: 20 балл)")
-        st.subheader("Жаңа нәтиже қосу")
         hist_test_input = st.text_input("Тарих нұсқасы", f"Тарих Нұсқа №{len(st.session_state.history_score_history)+1}", key="input_hist_title")
         hist_new_score = st.number_input("Жиналған балл (макс 20)", min_value=0, max_value=20, value=0, key="input_hist_score")
         if st.button("Қосу", key="btn_add_hist"):
@@ -529,7 +484,6 @@ else:
                 
     elif menu == "Сұрақ қосу":
         st.header("Жаңа сұрақ немесе кезеңдік тест қосу")
-        
         subject = st.selectbox("Бөлімді таңдаңыз", ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"])
         test_title = st.text_input("Тест атауы (Кезеңі)", "Мысалы: Математика: Тригонометрия")
         q_text = st.text_area("Сұрақ мәтіні")
@@ -561,9 +515,7 @@ else:
                     }
                     st.session_state.tests.append(new_test)
                 
-                # Файлға автоматты түрде сақтау
-                save_data(st.session_state.tests)
-                st.success("Сұрақ пен тест бұлтқа (файылға) сәтті сақталды!")
+                st.success("Сұрақ сәтті қосылды! (Ескерту: Сайт бұлтта болғандықтан, мәлімет жоғалмас үшін 'Деректерді басқару (JSON)' арқылы жиі жүктеп не сақтап отырыңыз).")
             else:
                 st.error("Барлық өрістерді толтырыңыз!")
 
@@ -582,7 +534,6 @@ else:
                     with col_del_q:
                         if st.button("🗑️ Жою", key=f"del_q_{t['id']}_{q_i}"):
                             t["questions"].pop(q_i)
-                            save_data(st.session_state.tests)
                             st.rerun()
                 st.markdown("---")
         else:
@@ -590,6 +541,8 @@ else:
 
     elif menu == "Деректерді басқару (JSON)":
         st.header("JSON арқылы деректерді сақтау және жүктеу")
+        st.info("💡 **Маңызды кеңес:** Streamlit бұлттық жүйесі сайтты кейде қайта іске қосатындықтан, өз сұрақтарыңызды жоғалтпас үшін 'Тесттерді JSON файлына сақтау' арқылы телефоныңызға немесе компьютеріңізге жиі сақтап қойыңыз!")
+        
         json_data = json.dumps(st.session_state.tests, ensure_ascii=False, indent=4)
         st.download_button(
             label="Тесттерді JSON файлына сақтау",
@@ -604,8 +557,7 @@ else:
                 loaded_tests = json.load(uploaded_file)
                 if isinstance(loaded_tests, list):
                     st.session_state.tests = loaded_tests
-                    save_data(st.session_state.tests)
-                    st.success("Деректер сәтті жүктелді және сақталды!")
+                    st.success("Деректер сәтті қалпына келтірілді!")
                     st.rerun()
                 else:
                     st.error("Формат қате!")
