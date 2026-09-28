@@ -256,9 +256,9 @@ def main_app():
                         else:
                             st.error("Тест атауын, сұрақ пен кем дегенде A және B нұсқаларын толтырыңыз!")
 
-    # 3. НӘТИЖЕЛЕРДІ ТҮРЛІ-ТҮСТІ КЕСТЕ ЖӘНЕ СТАНДАРТТЫ ГРАФИК ТҮРІНДЕ КӨРСЕТУ
+    # 3. НӘТИЖЕЛЕРДІ СЫЗЫҚТЫҚ ГРАФИК (LINE CHART) ТҮРІНДЕ КӨРСЕТУ
     elif menu == "Нәтижелер":
-        st.title("📊 Тест нәтижелері")
+        st.title("📊 Тест нәтижелері (Сызықтық график)")
         results = load_data(RESULTS_FILE)
         
         if results:
@@ -284,11 +284,12 @@ def main_app():
             
             df = pd.DataFrame(chart_data)
             
-            st.subheader("📈 Графиктік көрсеткіш:")
-            st.bar_chart(df.set_index("Қолданушы")["Ұпай"])
+            st.subheader("📈 Сызықтық көрсеткіш (Өсу және кему бағыты):")
+            # st.line_chart арқылы график сызық түрінде көрсетіледі
+            st.line_chart(df.set_index("Қолданушы")["Ұпай"])
             
             st.write("---")
-            st.subheader("📋 Толық мәліметтер кестесі (деңгейлерімен):")
+            st.subheader("📋 Толық мәліметтер кестесі:")
             st.dataframe(df)
             
             if st.button("Барлық нәтижелерді тазарту"):
@@ -333,4 +334,3 @@ if not st.session_state.logged_in:
     login_page()
 else:
     main_app()
-
