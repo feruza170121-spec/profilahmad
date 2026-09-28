@@ -243,15 +243,16 @@ elif menu == "Менің нәтижелерім":
         df = pd.DataFrame(formatted_results)
         unique_subjects = df["Пәні"].unique()
         
-        for subj in unique_subjects:
-            st.subheader(f"📖 Пән: {subj}")
-            subj_df = df[df["Пәні"] == subj]
-            
-            chart_data = subj_df.reset_index(drop=True)[["Ұпай"]]
-            st.line_chart(chart_data)
-            
-            st.dataframe(subj_df[["Тест атауы", "Ұпай", "Күні"]], use_container_width=True)
-            st.markdown("---")
+        # Қай пәннің нәтижесін көру керектігін таңдау үшін selectbox қосамыз
+        selected_subject = st.selectbox("Қай пәннің нәтижесін көргіңіз келеді?", unique_subjects)
+        
+        st.subheader(f"📖 Пән: {selected_subject}")
+        subj_df = df[df["Пәні"] == selected_subject]
+        
+        chart_data = subj_df.reset_index(drop=True)[["Ұпай"]]
+        st.line_chart(chart_data)
+        
+        st.dataframe(subj_df[["Тест атауы", "Ұпай", "Күні"]], use_container_width=True)
 
 elif menu == "Профильді баптау":
     st.header("Профильді өңдеу")
