@@ -1,5 +1,6 @@
 import streamlit as st
 import json
+import pandas as pd
 from datetime import datetime
 
 st.set_page_config(page_title="Инфо-Мат УБТ Базасы", layout="centered")
@@ -200,7 +201,6 @@ elif menu == "Деректерді басқару (JSON)":
     st.header("JSON арқылы деректерді сақтау және жүктеу")
     st.write("Барлық сұрақтар мен тесттерді JSON файлына сақтап, кейін қайта жүктей аласыз.")
     
-    # JSON жүктеп алу (Экспорт)
     json_data = json.dumps(st.session_state.tests, ensure_ascii=False, indent=4)
     st.download_button(
         label="Тесттерді JSON файлына сақтау",
@@ -211,7 +211,6 @@ elif menu == "Деректерді басқару (JSON)":
     
     st.markdown("---")
     
-    # JSON жүктеу (Импорт)
     uploaded_file = st.file_uploader("JSON файлын жүктеу арқылы қалпына келтіру", type=["json"])
     if uploaded_file is not None:
         try:
@@ -225,12 +224,22 @@ elif menu == "Деректерді басқару (JSON)":
             st.error(f"Қате орын алды: {e}")
 
 elif menu == "Менің нәтижелерім":
-    st.header("Менің нәтижелерім")
+    st.header("Менің нәтижелерім (График түрінде)")
     if not st.session_state.results:
-        st.write("Әзірге нәтижелер жоқ.")
+        st.info("Әзірге тапсырылған тест нәтижелері жоқ.")
     else:
+        # График үшін деректерді дайындау
+        chart_data = pd.DataFrame([
+            {"Тест атауы": r["title"], "Ұпай": r["score"], "Күні": r["date"]}
+            for r in st.session_state.results
+        ])
+        
+        # Бағанды график көрсету
+        st.bar_chart(chart_data, x="Тест атауы", y="Ұпай")
+        
+        st.markdown("### Нәтижелер тізімі:")
         for r in st.session_state.results:
-            st.write(f"**{r['title']}** — Ұпай: {r['score']} / {r['total']} ({r['date']})")
+            st.write(f"**{r['title']}** — Ұпай: **{r['score']}** / {r['total']} *({r['date']})*")
 
 elif menu == "Профильді баптау":
     st.header("Профильді өңдеу")
