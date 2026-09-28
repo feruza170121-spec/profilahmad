@@ -63,7 +63,7 @@ def init_json_files():
                 "question": f"Сұрақ №{i}: 2 + {i} нәтижесі қанша?",
                 "options": [str(2+i), str(3+i), str(4+i), str(5+i)],
                 "answer": str(2+i)
-            } for i in range(1, 11) # Тест сынағы үшін 10 сұрақ жасап қояйық
+            } for i in range(1, 11)
         ]
         with open(TESTS_FILE, "w", encoding="utf-8") as f:
             json.dump(default_tests, f, ensure_ascii=False, indent=4)
@@ -211,20 +211,19 @@ def main_app():
 
             st.subheader(f"📚 Тест атауы: {current_title}")
 
-            # --- СІЗ СҰРАҒАН НӨМІРЛЕНГЕН БАТЫРМАЛАР ПАНЕЛІ (СУРЕТТЕГІДЕЙ) ---
+            # --- СҰРАҚТАР НӨМІРЛЕРІ ПАНЕЛІ ---
             st.write("Сұрақтар арасында өту үшін төмендегі батырмаларды басыңыз:")
-            cols = st.columns(min(len(current_test_questions), 10)) # Бір жолға 10-ға дейін батырма сыйғызу
+            cols = st.columns(min(len(current_test_questions), 10))
             for idx, q_item in enumerate(current_test_questions):
                 col_idx = idx % 10
                 with cols[col_idx]:
                     btn_label = f"{idx + 1}"
-                    # Егер қазір тұрған сұрақ болса немесе жауап берілген болса көрінісін ерекшелеуге болады
                     if st.button(btn_label, key=f"q_btn_{idx}"):
                         st.session_state.current_question_index = idx
                         st.rerun()
             st.write("---")
 
-            # Ағымдағы сұрақты көрсету
+            # Ағымдағы сұрақ
             idx = st.session_state.current_question_index
             q = current_test_questions[idx]
             
@@ -234,7 +233,6 @@ def main_app():
             options = q['options']
             current_ans = st.session_state.user_answers.get(q['id'])
             
-            # Егер бұрын жауап берілген болса, индексін табу
             default_ix = 0
             if current_ans in options:
                 default_ix = options.index(current_ans)
@@ -244,7 +242,7 @@ def main_app():
             
             st.write("---")
             
-            # Алға / Артқа батырмалары және аяқтау батырмасы
+            # Батырмалар
             c_prev, c_next, c_finish = st.columns([1, 1, 2])
             
             with c_prev:
@@ -364,7 +362,7 @@ def main_app():
                         else:
                             st.error("Барлық міндетті өрістерді толтырыңыз!")
 
-    # 3. НӘТИЖЕЛЕР ЖӘНЕ ПРОФИЛЬДІК ГРАФИК
+    # 3. НӘТИЖЕЛЕР ЖӘНЕ ГРАФИК
     elif menu == "Нәтижелер":
         st.title("📊 Тест нәтижелері және психологиялық график")
         
