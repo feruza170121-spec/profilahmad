@@ -20,7 +20,7 @@ st.markdown("""
     [data-testid="stSidebar"] * {
         color: #00FF66 !important;
     }
-    h1, h2, h3, p, label {
+    h1, h2, h3, p, label, .stRadio label {
         color: #00FF66 !important;
     }
     .stButton>button {
@@ -49,24 +49,24 @@ if "tests" not in st.session_state:
     st.session_state.tests = [
         {
             "id": 1,
-            "subject": "Математика тарихы",
-            "title": "Математика тарихы: Ежелгі кезең",
+            "subject": "Қазақстан тарихы",
+            "title": "Қазақстан тарихы: Ежелгі кезең",
             "questions": [
                 {
-                    "question": "Пифагор теоремасы қай халыққа ерте заманнан белгілі болған?",
-                    "options": ["Вавилон және Қытай", "Тек Грекия", "Рим империясы", "Мысыр ғана"],
+                    "question": "Көне түркі жазба ескерткіштерінің ішіндегі ең ірісі:",
+                    "options": ["Күлтегін", "Тоныкөк", "Билге қаған", "Махмұт Қашғари"],
                     "correct": 0
                 }
             ]
         },
         {
             "id": 2,
-            "subject": "Математика тарихы",
-            "title": "Математика тарихы: Орта ғасырлар және Шығыс ғалымдары",
+            "subject": "Қазақстан тарихы",
+            "title": "Қазақстан тарихы: Орта ғасырлар",
             "questions": [
                 {
-                    "question": "Әл-Хорезми еңбегінен шыққан математикалық термин:",
-                    "options": ["Алгебра", "Геометрия", "Арифметика", "Тригонометрия"],
+                    "question": "Қарлұқ қағанаты өмір сүрген жылдар:",
+                    "options": ["704–940 жж.", "552–603 жж.", "942–1212 жж.", "1465–1847 жж."],
                     "correct": 0
                 }
             ]
@@ -136,7 +136,7 @@ menu = st.session_state.current_page
 if menu == "Тесттер тізімі":
     st.header("Инфо-Мат Бағыты (Кезеңдерге бөлінген тесттер)")
     
-    subjects = ["Математика тарихы", "Математикалық сауаттылық", "Математика", "Информатика"]
+    subjects = ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"]
     selected_subject = st.selectbox("Бағытты / Пәнді таңдаңыз:", subjects)
     
     filtered_tests = [t for t in st.session_state.tests if t["subject"] == selected_subject]
@@ -165,8 +165,8 @@ elif menu == "Сұрақ қосу":
     st.header("Жаңа сұрақ немесе кезеңдік тест қосу")
     
     with st.form("add_question_form"):
-        subject = st.selectbox("Бөлімді таңдаңыз", ["Математика тарихы", "Математикалық сауаттылық", "Математика", "Информатика"])
-        test_title = st.text_input("Тест атауы (Кезеңі)", "Мысалы: Математика тарихы: Жаңа заман")
+        subject = st.selectbox("Бөлімді таңдаңыз", ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"])
+        test_title = st.text_input("Тест атауы (Кезеңі)", "Мысалы: Қазақстан тарихы: Жаңа заман")
         q_text = st.text_area("Сұрақ мәтіні")
         opt0 = st.text_input("1-ші жауап")
         opt1 = st.text_input("2-ші жауап")
@@ -243,7 +243,6 @@ elif menu == "Менің нәтижелерім":
         df = pd.DataFrame(formatted_results)
         unique_subjects = df["Пәні"].unique()
         
-        # Қай пәннің нәтижесін көру керектігін таңдау үшін selectbox қосамыз
         selected_subject = st.selectbox("Қай пәннің нәтижесін көргіңіз келеді?", unique_subjects)
         
         st.subheader(f"📖 Пән: {selected_subject}")
