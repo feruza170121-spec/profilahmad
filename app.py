@@ -110,17 +110,12 @@ if "score_140_history" not in st.session_state:
 if not st.session_state.logged_in:
     st.write("")
     st.write("")
+    st.write("")
     
     col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
     with col_l2:
-        st.markdown("<p style='font-size: 26px; text-align: center;'><b>Hello Ahmad</b></p>", unsafe_allow_html=True)
-        
-        if isinstance(st.session_state.avatar, str):
-            st.image(st.session_state.avatar, width=150)
-        else:
-            st.image(st.session_state.avatar, width=150)
-            
-        st.markdown(f"<p style='text-align: center; font-size: 18px; margin-bottom: 20px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
+        # Hello Ahmad және кіші сурет өшіріліп, тек аты-жөні мен форма қалдырілді
+        st.markdown(f"<p style='text-align: center; font-size: 22px; margin-bottom: 25px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
         
         with st.form("login_form"):
             entered_password = st.text_input("ПК паролі / PIN-код", type="password")
@@ -249,9 +244,8 @@ if "active_test" in st.session_state and st.session_state.active_test:
             st.rerun()
             
 else:
-    # Сайдбардағы Профиль және "Hello Ahmad"
+    # Сайдбардағы Профиль
     st.sidebar.markdown("<p style='font-size: 32px; margin-bottom: 5px;'><b>Профиль</b></p>", unsafe_allow_html=True)
-    st.sidebar.markdown("<p style='font-size: 20px; color: #00FF66; margin-bottom: 10px;'><b>Hello Ahmad</b></p>", unsafe_allow_html=True)
     
     st.sidebar.image(st.session_state.avatar, width=120)
     st.sidebar.markdown(f"<p style='font-size: 22px; margin-top: 5px; margin-bottom: 10px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
