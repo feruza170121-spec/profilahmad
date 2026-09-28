@@ -85,19 +85,8 @@ if "tests" not in st.session_state:
                 {
                     "question": "Көне түркі жазба ескерткіштерінің ішіндегі ең ірісі:",
                     "options": ["Күлтегін", "Тоныкөк", "Билге қаған", "Махмұт Қашғари"],
-                    "correct": 0
-                }
-            ]
-        },
-        {
-            "id": 2,
-            "subject": "Математика",
-            "title": "Математика: Бастапқы формулалар мен теңдеулер",
-            "questions": [
-                {
-                    "question": "Егер 2x + 4 = 12 болса, x мәнін табыңыз:",
-                    "options": ["2", "4", "6", "8"],
-                    "correct": 1
+                    "correct": 0,
+                    "image": None
                 }
             ]
         }
@@ -184,6 +173,10 @@ if "active_test" in st.session_state and st.session_state.active_test:
                 else:
                     st.session_state.marked_questions.add(q_idx)
                 st.rerun()
+
+        # Егер сұраққа сурет қосылған болса, оны көрсету
+        if q.get("image") is not None:
+            st.image(q["image"], caption="Сұраққа қатысты сурет", use_column_width=True)
 
         st.write("Жауапты таңдаңыз:")
         current_selected = st.session_state.user_answers.get(q_idx)
@@ -341,7 +334,6 @@ else:
             df_140["Макс балл"] = 140
             chart_df = df_140.set_index("test_list")[["score", "Макс балл"]]
             
-            # График түстері (score - жасыл немесе әдепкі, Макс балл - көк)
             st.line_chart(chart_df, color=["#00FF66", "#0066FF"])
             
             st.subheader("📋 Енгізілген балдар тізімі (Жою мүмкіндігімен)")
@@ -476,6 +468,10 @@ else:
             subject = st.selectbox("Бөлімді таңдаңыз", ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"])
             test_title = st.text_input("Тест атауы (Кезеңі)", "Мысалы: Математика: Тригонометрия")
             q_text = st.text_area("Сұрақ мәтіні")
+            
+            # Сұраққа сурет жүктеу мүмкіндігі
+            q_image = st.file_uploader("Сұраққа сурет қосу (Міндетті емес)", type=["png", "jpg", "jpeg"])
+            
             opt0 = st.text_input("1-ші жауап")
             opt1 = st.text_input("2-ші жауап")
             opt2 = st.text_input("3-ші жауап")
@@ -486,13 +482,18 @@ else:
             if submitted:
                 if test_title and q_text and opt0 and opt1 and opt2 and opt3:
                     existing = next((t for t in st.session_state.tests if t["title"] == test_title and t["subject"] == subject), None)
-                    new_q = {"question": q_text, "options": [opt0, opt1, opt2, opt3], "correct": correct}
+                    new_q = {
+                        "question": q_text, 
+                        "options": [opt0, opt1, opt2, opt3], 
+                        "correct": correct,
+                        "image": q_image # Жүктелген суретті сақтау
+                    }
                     if existing:
                         if len(existing["questions"]) >= 50:
                             st.error("Бұл тестте 50 сұрақ толып қалды!")
                         else:
                             existing["questions"].append(new_q)
-                            st.success("Сұрақ сәтті қосылды!")
+                            st.success("Сұрақ суретімен сәтті қосылды!")
                     else:
                         new_test = {
                             "id": len(st.session_state.tests) + 1,
@@ -501,9 +502,9 @@ else:
                             "questions": [new_q]
                         }
                         st.session_state.tests.append(new_test)
-                        st.success("Жаңа тест пен сұрақ сәтті қосылды!")
+                        st.success("Жаңа тест пен суретті сұрақ сәтті қосылды!")
                 else:
-                    st.error("Барлық өрістерді толтырыңыз!")
+                    st.error("Барлық негізгі өрістерді толтырыңыз!")
 
     elif menu == "Деректерді басқару (JSON)":
         st.header("JSON арқылы деректерді сақтау және жүктеу")
