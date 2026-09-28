@@ -5,7 +5,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="Инфо-Мат УБТ Базасы", layout="centered")
 
-# Қара түсті және жасыл элементтерге арналған CSS стилі
+# Қара түсті және жасыл элементтерге арналған CSS стилі (3D сертификатпен)
 st.markdown("""
     <style>
     .stApp {
@@ -37,13 +37,27 @@ st.markdown("""
         background-color: #00FF66;
         color: #121212;
     }
+    /* 3D және 3 есе үлкейтілген сертификат стилі */
     .certificate {
-        background-color: #1a1a1a;
-        border: 3px solid #00FF66;
-        padding: 30px;
-        border-radius: 10px;
+        background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+        border: 4px solid #00FF66;
+        padding: 60px;
+        border-radius: 20px;
         text-align: center;
-        box-shadow: 0 0 20px rgba(0, 255, 102, 0.2);
+        transform: perspective(1000px) rotateX(3deg);
+        box-shadow: 0 25px 50px rgba(0, 255, 102, 0.3), inset 0 0 30px rgba(0, 255, 102, 0.1);
+        margin: 30px auto;
+    }
+    .certificate h2 {
+        font-size: 32px !important;
+        letter-spacing: 2px;
+    }
+    .certificate h1 {
+        font-size: 44px !important;
+        text-shadow: 0 0 15px rgba(0, 255, 102, 0.5);
+    }
+    .certificate p {
+        font-size: 20px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -100,7 +114,6 @@ if "active_test" in st.session_state and st.session_state.active_test:
         current_selected = st.session_state.user_answers.get(q_idx)
 
         for i, option in enumerate(q["options"]):
-            # Таңдалған жауапты ерекшелеу үшін түсін өзгерту
             btn_label = f"✅ {option}" if current_selected == i else f"{i+1}) {option}"
             if st.button(btn_label, key=f"opt_{q_idx}_{i}"):
                 st.session_state.user_answers[q_idx] = i
@@ -108,7 +121,6 @@ if "active_test" in st.session_state and st.session_state.active_test:
                 
         st.markdown("---")
         
-        # Навигация батырмалары (Артқа / Келесі)
         col_prev, col_next = st.columns(2)
         with col_prev:
             if q_idx > 0:
@@ -131,7 +143,6 @@ if "active_test" in st.session_state and st.session_state.active_test:
             del st.session_state.user_answers
             st.rerun()
     else:
-        # Нәтижені есептеу
         score = 0
         for idx, q_data in enumerate(test["questions"]):
             if st.session_state.user_answers.get(idx) == q_data["correct"]:
@@ -148,16 +159,16 @@ if "active_test" in st.session_state and st.session_state.active_test:
                 "date": datetime.now().strftime("%Y-%m-%d %H:%M")
             })
 
-        # Сертификат
+        # 3D және үлкейтілген сертификат
         st.markdown(f"""
             <div class="certificate">
                 <h2>🏆 СЕРТИФИКАТ 🏆</h2>
-                <p>Осы сертификат төмендегі азаматқа беріледі:</p>
-                <h1 style="color: #ffffff; margin: 10px 0;">{st.session_state.username}</h1>
-                <p><b>{test['title']}</b> тестін сәтті аяқтады!</p>
-                <hr style="border-color: #00FF66; margin: 20px 0;">
-                <p style="font-size: 18px;">Жинаған ұпайы: <b>{score} / {total} ({percent}%)</b></p>
-                <p style="font-size: 12px; color: #888; margin-top: 20px;">Күні: {datetime.now().strftime("%Y-%m-%d %H:%M")}</p>
+                <p>Осы сертификат салтанатты түрде төмендегі азаматқа беріледі:</p>
+                <h1 style="color: #ffffff; margin: 20px 0;">{st.session_state.username}</h1>
+                <p><b>{test['title']}</b> тестін сәтті аяқтап, жоғары нәтиже көрсетті!</p>
+                <hr style="border-color: #00FF66; margin: 30px 0;">
+                <p style="font-size: 24px;">Жинаған ұпайыңыз: <b>{score} / {total} ({percent}%)</b></p>
+                <p style="font-size: 14px; color: #888; margin-top: 30px;">Берілген күні: {datetime.now().strftime("%Y-%m-%d %H:%M")}</p>
             </div>
         """, unsafe_allow_html=True)
         
@@ -168,7 +179,6 @@ if "active_test" in st.session_state and st.session_state.active_test:
             st.rerun()
             
 else:
-    # Сайдбар бөлімі (тест жүріп жатпаған кезде)
     st.sidebar.markdown("<p style='font-size: 13px; margin-bottom: 2px;'><b>Профиль</b></p>", unsafe_allow_html=True)
     col_img, col_name = st.sidebar.columns([1, 3])
     with col_img:
