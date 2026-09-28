@@ -6,6 +6,39 @@ import pandas as pd
 # Беттің баптауы
 st.set_page_config(page_title="Жеке Тест Платформасы", page_icon="🔐", layout="centered")
 
+# --- CSS СТИЛЬДЕРІ: Жазуларды үлкейту және шеткі домалақтарды өшіру ---
+st.markdown("""
+    <style>
+    /* Барлық негізгі мәтіндер мен енгізу өрістерін үлкейту */
+    html, body, [class*="css"] {
+        font-size: 18px !important;
+    }
+    
+    /* Тақырыптарды үлкейту */
+    h1 {
+        font-size: 2.5rem !important;
+    }
+    h2 {
+        font-size: 2rem !important;
+    }
+    h3 {
+        font-size: 1.5rem !important;
+    }
+    
+    /* Тізімдердің шетіндегі домалақ белгілерді (bullet points) өшіру */
+    ul, ol {
+        list-style-type: none !important;
+        padding-left: 0px !important;
+    }
+    
+    /* Markdown ішіндегі тізімдерді тазарту */
+    li {
+        list-style: none !important;
+        margin-bottom: 8px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- ФАЙЛДАРДЫ БАСҚАРУ (JSON) ---
 USERS_FILE = "users.json"
 TESTS_FILE = "tests.json"
@@ -13,7 +46,6 @@ RESULTS_FILE = "results.json"
 
 # Бастапқы файлдарды құру және әрқашан дұрыс логин-парольді қамтамасыз ету
 def init_json_files():
-    # Админ паролі қате шықпас үшін әрқашан жаңартылып отырады
     default_users = {"admin": "secret123"}
     if os.path.exists(USERS_FILE):
         try:
