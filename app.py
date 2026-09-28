@@ -102,13 +102,44 @@ if "active_test" in st.session_state and st.session_state.active_test:
         st.session_state.q_index = 0
     if "user_answers" not in st.session_state:
         st.session_state.user_answers = {}
+    if "marked_questions" not in st.session_state:
+        st.session_state.marked_questions = set()
+
+    total_questions = len(test["questions"])
+
+    # Төбесіне сұрақ нөмірлері панелі (пагинация)
+    st.write("Сұрақтар нөмірі:")
+    cols = st.columns(min(total_questions, 10))
+    for idx in range(total_questions):
+        col_idx = idx % 10
+        with cols[col_idx]:
+            # Егер сұрақ белгіленген болса немесе қазіргі сұрақ болса
+            btn_prefix = "📌 " if idx in st.session_state.marked_questions else ""
+            if st.button(f"{btn_prefix}{idx+1}", key=f"q_num_{idx}", use_container_width=True):
+                st.session_state.q_index = idx
+                st.rerun()
+
+    st.markdown("---")
 
     q_idx = st.session_state.q_index
-    total_questions = len(test["questions"])
 
     if q_idx < total_questions:
         q = test["questions"][q_idx]
-        st.subheader(f"Сұрақ {q_idx + 1} / {total_questions}: {q['question']}")
+        
+        # Сұрақ және «Белгілеу» түймесі
+        col_q_title, col_mark = st.columns([3, 1])
+        with col_q_title:
+            st.subheader(f"Сұрақ {q_idx + 1} / {total_questions}: {q['question']}")
+        with col_mark:
+            is_marked = q_idx in st.session_state.marked_questions
+            mark_label = "⭐ Белгіленді" if is_marked else "☆ Белгілеу"
+            if st.button(mark_label, key=f"mark_btn_{q_idx}"):
+                if is_marked:
+                    st.session_state.marked_questions.remove(q_idx)
+                else:
+                    st.session_state.marked_questions.add(q_idx)
+                st.rerun()
+
         st.write("Жауапты таңдаңыз:")
         
         current_selected = st.session_state.user_answers.get(q_idx)
@@ -141,6 +172,7 @@ if "active_test" in st.session_state and st.session_state.active_test:
         if st.button("❌ Тесттен шығу (Мәзірге қайту)"):
             del st.session_state.active_test
             del st.session_state.user_answers
+            del st.session_state.marked_questions
             st.rerun()
     else:
         score = 0
@@ -176,10 +208,10 @@ if "active_test" in st.session_state and st.session_state.active_test:
         if st.button("Мәзірге қайту"):
             del st.session_state.active_test
             del st.session_state.user_answers
+            del st.session_state.marked_questions
             st.rerun()
             
 else:
-    # 3 есе үлкейтілген профиль бөлімі сайдбарда
     st.sidebar.markdown("<p style='font-size: 36px; margin-bottom: 10px;'><b>Профиль</b></p>", unsafe_allow_html=True)
     st.sidebar.image(st.session_state.avatar, width=120)
     st.sidebar.markdown(f"<p style='font-size: 26px; margin-top: 10px; margin-bottom: 20px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
@@ -216,6 +248,7 @@ else:
                             st.session_state.active_test = test
                             st.session_state.q_index = 0
                             st.session_state.user_answers = {}
+                            st.session_state.marked_questions = set()
                             st.rerun()
                     with col2:
                         if st.button("Өшіру", key=f"del_{test['id']}"):
