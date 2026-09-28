@@ -99,12 +99,9 @@ if "tests" not in st.session_state:
 if "results" not in st.session_state:
     st.session_state.results = []
 
+# Бастапқыда 0 болып тұруы үшін бұл тізімді бос қалдырамыз
 if "score_140_history" not in st.session_state:
-    st.session_state.score_140_history = [
-        {"test_list": "Нұсқа №1", "score": 85},
-        {"test_list": "Нұсқа №2", "score": 98},
-        {"test_list": "Нұсқа №3", "score": 115}
-    ]
+    st.session_state.score_140_history = []
 
 # ----------------- ЛОГИН ЭКРАНЫ -----------------
 if not st.session_state.logged_in:
@@ -296,7 +293,7 @@ else:
 
     elif menu == "140 балдық статистика":
         st.header("🎯 140 балдық жеке статистика және график")
-        st.write("Бұл панель басқа тесттер мен пәндерден бөлек жұмыс істейді. Өз балдарыңызды төменден енгізіп, динамиканы бақылаңыз[cite: 9].")
+        st.write("Бұл жерде башында барлық мәлімет 0 болып тұрады. Төменден өз нәтижелеріңізді енгізіп, графикті көтере аласыз[cite: 9].")
         
         st.markdown("---")
         
@@ -304,7 +301,7 @@ else:
         with st.form("add_140_score_main"):
             st.subheader("Жаңа нәтиже қосу")
             test_list_input = st.text_input("Тесттер тізімі / Нұсқа атауы", f"Нұсқа №{len(st.session_state.score_140_history)+1}")
-            new_score = st.number_input("Жинаған балл (макс 140)", min_value=0, max_value=140, value=100)
+            new_score = st.number_input("Жинаған балл (макс 140)", min_value=0, max_value=140, value=0)
             submitted_score = st.form_submit_button("Баллды қосу")
             if submitted_score:
                 st.session_state.score_140_history.append({"test_list": test_list_input, "score": new_score})
@@ -321,7 +318,7 @@ else:
             st.subheader("📋 Енгізілген балдар тізімі")
             st.dataframe(df_140.rename(columns={"test_list": "Тесттер тізімі", "score": "Жинаған балл"}), use_container_width=True)
         else:
-            st.info("Әзірге енгізілген балдар жоқ.")
+            st.info("Әзірге балдар енгізілмеді (График 0 де тұр). Жоғарыдан өз нәтижеңізді енгізіңіз!")
                 
     elif menu == "Сұрақ қосу":
         st.header("Жаңа сұрақ немесе кезеңдік тест қосу")
