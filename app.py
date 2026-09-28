@@ -112,7 +112,6 @@ def main_app():
             st.warning("Әзірге жасақталған тесттер жоқ.")
             return
             
-        # Барлық тест атауларын жинау
         test_titles = sorted(list(set(q.get("test_title", "Атаусыз тест").strip() for q in tests if q.get("test_title"))))
         
         if not test_titles:
@@ -123,9 +122,8 @@ def main_app():
             st.subheader("Тапсыру үшін тест атауын таңдаңыз:")
             selected_title = st.selectbox("Тест атауы:", test_titles, key="test_title_select")
             
-            # Таңдалған тест туралы қысқаша ақпарат
             selected_tests_preview = [q for q in tests if q.get("test_title") == selected_title]
-            st.info(1 * f"Бұл тестте барлығы {len(selected_tests_preview)} сұрақ бар (Максимум 50 сұрақ).")
+            st.info(f"Бұл тестте барлығы {len(selected_tests_preview)} сұрақ бар (Максимум 50 сұрақ).")
             
             if st.button("Тестті бастау"):
                 st.session_state.test_started = True
@@ -213,13 +211,10 @@ def main_app():
         with tab2:
             st.subheader("Жаңа сұрақ қосу (Әр тестке макс. 50 сұрақ)")
             
-            # Қолда бар тест атауларының тізімі (жаңасын енгізу мүмкіндігімен)
-            existing_titles = list(set(q.get("test_title", "Атаусыз тест") for q in tests))
-            
             with st.form("add_question_form"):
                 st.markdown("### Тесттің атауы")
-                test_title_input = st.selectbox("Бар тест атауын таңдаңыз немесе төменге жазыңыз:", ["-- Жалпы тест --"] + existing_titles)
-                custom_test_title = st.text_input("Немесе жаңа тест атауын енгізіңіз:")
+                # Тікелей мәтін енгізу жолағы (туынды атауды өз бетінше жазу үшін)
+                test_title_input = st.text_input("Тест атауын енгізіңіз (мысалы: Физика 1-тоқсан):", value="")
                 
                 subject_input = st.selectbox("Пәні:", ["Математика", "Информатика", "Физика", "Тарих", "Ағылшын тілі", "Басқа"])
                 
@@ -234,10 +229,8 @@ def main_app():
                 add_submitted = st.form_submit_button("Сұрақты сақтау")
                 
                 if add_submitted:
-                    # Тест атауын анықтау
-                    final_test_title = custom_test_title.strip() if custom_test_title.strip() else (test_title_input if test_title_input != "-- Жалпы тест --" else "Жалпы тест")
+                    final_test_title = test_title_input.strip() if test_title_input.strip() else "Атаусыз тест"
                     
-                    # Лимитты тексеру (Максимум 50 сұрақ)
                     current_count_in_test = len([q for q in tests if q.get("test_title") == final_test_title])
                     
                     if current_count_in_test >= 50:
@@ -263,7 +256,7 @@ def main_app():
                                 save_data(TESTS_FILE, tests)
                                 st.success(f"Сәтті қосылды! Бұл тестте қазір {current_count_in_test + 1} / 50 сұрақ бар.")
                         else:
-                            st.error("Тест атауы, сұрақ және кем дегенде A мен B нұсқаларын толтырыңыз!")
+                            st.error("Тест атауын, сұрақ пен кем дегенде A және B нұсқаларын толтырыңыз!")
 
     # 3. НӘТИЖЕЛЕРДІ ГРАФИК ТҮРІНДЕ КӨРСЕТУ
     elif menu == "Нәтижелер":
