@@ -60,7 +60,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Сессиялық айнымалыларды инициализациялау
+# Сессиялық айнымалыларды инициализациялау (деректер өшпеуі үшін)
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
@@ -90,7 +90,7 @@ if "tests" not in st.session_state:
 if "results" not in st.session_state:
     st.session_state.results = []
 
-# Статистика тарихтары
+# Статистика тарихтары (деректер сақталуы үшін)
 if "score_140_history" not in st.session_state:
     st.session_state.score_140_history = []
 if "math_score_history" not in st.session_state:
@@ -336,14 +336,14 @@ else:
     elif menu == "140 балдық статистика":
         st.header("🎯 140 балдық жеке статистика және график")
         
-        with st.form("add_140_score_main"):
-            st.subheader("Жаңа нәтиже қосу")
-            test_list_input = st.text_input("Тесттер тізімі / Нұсқа атауы", f"Нұсқа №{len(st.session_state.score_140_history)+1}")
-            new_score = st.number_input("Жинаған балл (макс 140)", min_value=0, max_value=140, value=0)
-            if st.form_submit_button("Баллды қосу"):
-                st.session_state.score_140_history.append({"test_list": test_list_input, "score": new_score, "max_score": 140})
-                st.success("Балл сәтті қосылды!")
-                st.rerun()
+        # Form сыртына шығарылды, сонда батырманы басқанда жазғандар ошып кетпейді
+        st.subheader("Жаңа нәтиже қосу")
+        test_list_input = st.text_input("Тесттер тізімі / Нұсқа атауы", f"Нұсқа №{len(st.session_state.score_140_history)+1}", key="input_140_title")
+        new_score = st.number_input("Жинаған балл (макс 140)", min_value=0, max_value=140, value=0, key="input_140_score")
+        if st.button("Баллды қосу", key="btn_add_140"):
+            st.session_state.score_140_history.append({"test_list": test_list_input, "score": new_score, "max_score": 140})
+            st.success("Балл сәтті қосылды!")
+            st.rerun()
                 
         st.markdown("---")
         if st.session_state.score_140_history:
@@ -362,12 +362,15 @@ else:
 
     elif menu == "Математика (50 балл)":
         st.header("📐 Математика пәні бойынша статистика (Макс: 50 балл)")
-        with st.form("add_math_score_form"):
-            math_test_input = st.text_input("Математика нұсқасы", f"Мат. Нұсқа №{len(st.session_state.math_score_history)+1}")
-            math_new_score = st.number_input("Жиналған балл (макс 50)", min_value=0, max_value=50, value=0)
-            if st.form_submit_button("Қосу"):
-                st.session_state.math_score_history.append({"test_list": math_test_input, "score": math_new_score})
-                st.rerun()
+        st.subheader("Жаңа нәтиже қосу")
+        math_test_input = st.text_input("Математика нұсқасы", f"Мат. Нұсқа №{len(st.session_state.math_score_history)+1}", key="input_math_title")
+        math_new_score = st.number_input("Жиналған балл (макс 50)", min_value=0, max_value=50, value=0, key="input_math_score")
+        if st.button("Қосу", key="btn_add_math"):
+            st.session_state.math_score_history.append({"test_list": math_test_input, "score": math_new_score})
+            st.success("Сәтті қосылды!")
+            st.rerun()
+
+        st.markdown("---")
         if st.session_state.math_score_history:
             df_math = pd.DataFrame(st.session_state.math_score_history)
             df_math["Макс балл (50)"] = 50
@@ -383,12 +386,15 @@ else:
 
     elif menu == "Информатика (50 балл)":
         st.header("💻 Информатика пәні бойынша статистика (Макс: 50 балл)")
-        with st.form("add_info_score_form"):
-            info_test_input = st.text_input("Информатика нұсқасы", f"Инфо. Нұсқа №{len(st.session_state.info_score_history)+1}")
-            info_new_score = st.number_input("Жиналған балл (макс 50)", min_value=0, max_value=50, value=0)
-            if st.form_submit_button("Қосу"):
-                st.session_state.info_score_history.append({"test_list": info_test_input, "score": info_new_score})
-                st.rerun()
+        st.subheader("Жаңа нәтиже қосу")
+        info_test_input = st.text_input("Информатика нұсқасы", f"Инфо. Нұсқа №{len(st.session_state.info_score_history)+1}", key="input_info_title")
+        info_new_score = st.number_input("Жиналған балл (макс 50)", min_value=0, max_value=50, value=0, key="input_info_score")
+        if st.button("Қосу", key="btn_add_info"):
+            st.session_state.info_score_history.append({"test_list": info_test_input, "score": info_new_score})
+            st.success("Сәтті қосылды!")
+            st.rerun()
+
+        st.markdown("---")
         if st.session_state.info_score_history:
             df_info = pd.DataFrame(st.session_state.info_score_history)
             df_info["Макс балл (50)"] = 50
@@ -404,12 +410,15 @@ else:
 
     elif menu == "Математикалық сауаттылық (10 балл)":
         st.header("📊 Математикалық сауаттылық статистикасы (Макс: 10 балл)")
-        with st.form("add_math_lit_form"):
-            ml_test_input = st.text_input("Мат. сауаттылық нұсқасы", f"МатСау Нұсқа №{len(st.session_state.math_lit_score_history)+1}")
-            ml_new_score = st.number_input("Жиналған балл (макс 10)", min_value=0, max_value=10, value=0)
-            if st.form_submit_button("Қосу"):
-                st.session_state.math_lit_score_history.append({"test_list": ml_test_input, "score": ml_new_score})
-                st.rerun()
+        st.subheader("Жаңа нәтиже қосу")
+        ml_test_input = st.text_input("Мат. сауаттылық нұсқасы", f"МатСау Нұсқа №{len(st.session_state.math_lit_score_history)+1}", key="input_ml_title")
+        ml_new_score = st.number_input("Жиналған балл (макс 10)", min_value=0, max_value=10, value=0, key="input_ml_score")
+        if st.button("Қосу", key="btn_add_ml"):
+            st.session_state.math_lit_score_history.append({"test_list": ml_test_input, "score": ml_new_score})
+            st.success("Сәтті қосылды!")
+            st.rerun()
+
+        st.markdown("---")
         if st.session_state.math_lit_score_history:
             df_ml = pd.DataFrame(st.session_state.math_lit_score_history)
             df_ml["Макс балл (10)"] = 10
@@ -425,12 +434,15 @@ else:
 
     elif menu == "Қазақстан тарихы (20 балл)":
         st.header("🇰🇿 Қазақстан тарихы статистикасы (Макс: 20 балл)")
-        with st.form("add_history_form"):
-            hist_test_input = st.text_input("Тарих нұсқасы", f"Тарих Нұсқа №{len(st.session_state.history_score_history)+1}")
-            hist_new_score = st.number_input("Жиналған балл (макс 20)", min_value=0, max_value=20, value=0)
-            if st.form_submit_button("Қосу"):
-                st.session_state.history_score_history.append({"test_list": hist_test_input, "score": hist_new_score})
-                st.rerun()
+        st.subheader("Жаңа нәтиже қосу")
+        hist_test_input = st.text_input("Тарих нұсқасы", f"Тарих Нұсқа №{len(st.session_state.history_score_history)+1}", key="input_hist_title")
+        hist_new_score = st.number_input("Жиналған балл (макс 20)", min_value=0, max_value=20, value=0, key="input_hist_score")
+        if st.button("Қосу", key="btn_add_hist"):
+            st.session_state.history_score_history.append({"test_list": hist_test_input, "score": hist_new_score})
+            st.success("Сәтті қосылды!")
+            st.rerun()
+
+        st.markdown("---")
         if st.session_state.history_score_history:
             df_hist = pd.DataFrame(st.session_state.history_score_history)
             df_hist["Макс балл (20)"] = 20
@@ -447,42 +459,40 @@ else:
     elif menu == "Сұрақ қосу":
         st.header("Жаңа сұрақ немесе кезеңдік тест қосу")
         
-        with st.form("add_question_form"):
-            subject = st.selectbox("Бөлімді таңдаңыз", ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"])
-            test_title = st.text_input("Тест атауы (Кезеңі)", "Мысалы: Математика: Тригонометрия")
-            q_text = st.text_area("Сұрақ мәтіні")
-            q_image = st.file_uploader("Сұраққа сурет қосу (Міндетті емес)", type=["png", "jpg", "jpeg"])
-            
-            opt0 = st.text_input("1-ші жауап")
-            opt1 = st.text_input("2-ші жауап")
-            opt2 = st.text_input("3-ші жауап")
-            opt3 = st.text_input("4-ші жауап")
-            correct = st.selectbox("Дұрыс жауап", [0, 1, 2, 3], format_func=lambda x: f"{x+1}-ші нұсқа")
-            
-            submitted = st.form_submit_button("Сұрақты сақтау")
-            if submitted:
-                if test_title and q_text and opt0 and opt1 and opt2 and opt3:
-                    existing = next((t for t in st.session_state.tests if t["title"] == test_title and t["subject"] == subject), None)
-                    new_q = {
-                        "question": q_text, 
-                        "options": [opt0, opt1, opt2, opt3], 
-                        "correct": correct,
-                        "image": q_image
-                    }
-                    if existing:
-                        existing["questions"].append(new_q)
-                        st.success("Сұрақ тестке сәтті қосылды!")
-                    else:
-                        new_test = {
-                            "id": len(st.session_state.tests) + 1,
-                            "subject": subject,
-                            "title": test_title,
-                            "questions": [new_q]
-                        }
-                        st.session_state.tests.append(new_test)
-                        st.success("Жаңа тест пен сұрақ сәтті қосылды!")
+        subject = st.selectbox("Бөлімді таңдаңыз", ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"])
+        test_title = st.text_input("Тест атауы (Кезеңі)", "Мысалы: Математика: Тригонометрия")
+        q_text = st.text_area("Сұрақ мәтіні")
+        q_image = st.file_uploader("Сұраққа сурет қосу (Міндетті емес)", type=["png", "jpg", "jpeg"])
+        
+        opt0 = st.text_input("1-ші жауап")
+        opt1 = st.text_input("2-ші жауап")
+        opt2 = st.text_input("3-ші жауап")
+        opt3 = st.text_input("4-ші жауап")
+        correct = st.selectbox("Дұрыс жауап", [0, 1, 2, 3], format_func=lambda x: f"{x+1}-ші нұсқа")
+        
+        if st.button("Сұрақты сақтау"):
+            if test_title and q_text and opt0 and opt1 and opt2 and opt3:
+                existing = next((t for t in st.session_state.tests if t["title"] == test_title and t["subject"] == subject), None)
+                new_q = {
+                    "question": q_text, 
+                    "options": [opt0, opt1, opt2, opt3], 
+                    "correct": correct,
+                    "image": q_image
+                }
+                if existing:
+                    existing["questions"].append(new_q)
+                    st.success("Сұрақ тестке сәтті қосылды!")
                 else:
-                    st.error("Барлық өрістерді толтырыңыз!")
+                    new_test = {
+                        "id": len(st.session_state.tests) + 1,
+                        "subject": subject,
+                        "title": test_title,
+                        "questions": [new_q]
+                    }
+                    st.session_state.tests.append(new_test)
+                    st.success("Жаңа тест пен сұрақ сәтті қосылды!")
+            else:
+                st.error("Барлық өрістерді толтырыңыз!")
 
     elif menu == "Сұрақтарды басқару":
         st.header("⚙️ Қосылған сұрақтарды қарау және өшіру")
@@ -546,21 +556,20 @@ else:
 
     elif menu == "Профиль":
         st.header("Профильді басқару")
-        with st.form("profile_settings_form"):
-            new_name = st.text_input("Аты-жөніңіз", st.session_state.username)
-            photo_method = st.radio("Фото жүктеу тәсілі:", ["Компьютерден сурет жүктеу", "Интернеттен сурет сілтемесін (URL) жазу"])
-            uploaded_image = None
-            url_image = ""
-            if photo_method == "Компьютерден сурет жүктеу":
-                uploaded_image = st.file_uploader("Суретті таңдаңыз", type=["png", "jpg", "jpeg"])
-            else:
-                url_image = st.text_input("Сурет сілтемесі (URL)")
-            
-            if st.form_submit_button("Өзгерістерді сақтау"):
-                st.session_state.username = new_name
-                if photo_method == "Компьютерден сурет жүктеу" and uploaded_image is not None:
-                    st.session_state.avatar = uploaded_image
-                elif photo_method == "Интернеттен сурет сілтемесін (URL) жазу" and url_image.strip() != "":
-                    st.session_state.avatar = url_image.strip()
-                st.success("Сәтті сақталды!")
-                st.rerun()
+        new_name = st.text_input("Аты-жөніңіз", st.session_state.username)
+        photo_method = st.radio("Фото жүктеу тәсілі:", ["Компьютерден сурет жүктеу", "Интернеттен сурет сілтемесін (URL) жазу"])
+        uploaded_image = None
+        url_image = ""
+        if photo_method == "Компьютерден сурет жүктеу":
+            uploaded_image = st.file_uploader("Суретті таңдаңыз", type=["png", "jpg", "jpeg"])
+        else:
+            url_image = st.text_input("Сурет сілтемесі (URL)")
+        
+        if st.button("Өзгерістерді сақтау"):
+            st.session_state.username = new_name
+            if photo_method == "Компьютерден сурет жүктеу" and uploaded_image is not None:
+                st.session_state.avatar = uploaded_image
+            elif photo_method == "Интернеттен сурет сілтемесін (URL) жазу" and url_image.strip() != "":
+                st.session_state.avatar = url_image.strip()
+            st.success("Сәтті сақталды!")
+            st.rerun()
