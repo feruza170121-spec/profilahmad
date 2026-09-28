@@ -159,7 +159,7 @@ def main_app():
                             score += 1
                     
                     result_str = f"{score} / {len(current_test_questions)}"
-                    st.balloons()
+                    # Шарлар алынып тасталды
                     st.success(f"Тест аяқталды! Сіздің нәтижеңіз ({current_title}): {result_str}")
                     
                     results = load_data(RESULTS_FILE)
@@ -213,7 +213,6 @@ def main_app():
             
             with st.form("add_question_form"):
                 st.markdown("### Тесттің атауы")
-                # Тікелей мәтін енгізу жолағы (туынды атауды өз бетінше жазу үшін)
                 test_title_input = st.text_input("Тест атауын енгізіңіз (мысалы: Физика 1-тоқсан):", value="")
                 
                 subject_input = st.selectbox("Пәні:", ["Математика", "Информатика", "Физика", "Тарих", "Ағылшын тілі", "Басқа"])
