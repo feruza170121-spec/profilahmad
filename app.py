@@ -2,7 +2,6 @@ import streamlit as st
 import json
 import os
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # Беттің баптауы
 st.set_page_config(page_title="Жеке Тест Платформасы", page_icon="🔐", layout="centered")
@@ -362,9 +361,9 @@ def main_app():
                         else:
                             st.error("Барлық міндетті өрістерді толтырыңыз!")
 
-    # 3. НӘТИЖЕЛЕР ЖӘНЕ ГРАФИК
+    # 3. НӘТИЖЕЛЕР ЖӘНЕ ГРАФИК (matplotlib-сіз, қате шықпайды)
     elif menu == "Нәтижелер":
-        st.title("📊 Тест нәтижелері және психологиялық график")
+        st.title("📊 Тест нәтижелері және акцентуация профилі")
         
         accentuation_types = [
             "Демонстративный тип", "Застревающий тип", "Педантичный тип",
@@ -374,15 +373,13 @@ def main_app():
         ]
         sample_scores = [10, 14, 14, 6, 6, 9, 12, 12, 12, 9]
 
-        st.subheader("📈 Акцентуация профилінің графигі (Үлгі бойынша)")
-        fig, ax = plt.subplots(figsize=(10, 5))
-        ax.plot(accentuation_types, sample_scores, marker='D', color='#2b5c8f', linewidth=2, markersize=6)
-        ax.set_ylim(0, 16)
-        ax.set_yticks(range(0, 18, 2))
-        ax.grid(True, linestyle='-', alpha=0.6)
-        plt.xticks(rotation=45, ha='right', fontsize=10)
-        plt.tight_layout()
-        st.pyplot(fig)
+        st.subheader("📈 Акцентуация профилінің графигі")
+        
+        # Streamlit-тің өзінің кіріктірілген сызықтық графигі (matplotlib қажет емес!)
+        chart_df = pd.DataFrame({
+            "Балл": sample_scores
+        }, index=accentuation_types)
+        st.line_chart(chart_df)
         
         st.write("---")
         st.subheader("📋 Қолданушылардың нәтижелер тізімі:")
