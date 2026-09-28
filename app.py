@@ -114,7 +114,6 @@ if not st.session_state.logged_in:
     
     col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
     with col_l2:
-        # Аты-жөні орнына Ahmadjan Hello! жазылды
         st.markdown("<p style='text-align: center; font-size: 26px; margin-bottom: 25px;'><b>Ahmadjan Hello!</b></p>", unsafe_allow_html=True)
         
         with st.form("login_form"):
@@ -244,7 +243,7 @@ if "active_test" in st.session_state and st.session_state.active_test:
             st.rerun()
             
 else:
-    # Сайдбардағы Профиль
+    # Сайдбардағы Профиль (тек аты/сурет және шығу батырмасы қалды)
     st.sidebar.markdown("<p style='font-size: 32px; margin-bottom: 5px;'><b>Профиль</b></p>", unsafe_allow_html=True)
     
     st.sidebar.image(st.session_state.avatar, width=120)
@@ -255,20 +254,9 @@ else:
         st.rerun()
 
     st.sidebar.markdown("---")
-    st.sidebar.markdown("<p style='font-size: 18px; color: #00FF66; margin-bottom: 5px;'>🎯 <b>140 алған балдар</b></p>", unsafe_allow_html=True)
-    
-    with st.sidebar.form("add_140_score"):
-        test_list_input = st.text_input("Тесттер тізімі", f"Нұсқа №{len(st.session_state.score_140_history)+1}")
-        new_score = st.number_input("Жинаған балл (макс 140)", min_value=0, max_value=140, value=100)
-        submitted_score = st.form_submit_button("Баллды қосу")
-        if submitted_score:
-            st.session_state.score_140_history.append({"test_list": test_list_input, "score": new_score})
-            st.rerun()
-
-    st.sidebar.markdown("---")
     st.sidebar.markdown("<p style='font-size: 18px; margin-bottom: 10px;'><b>Мәзір</b></p>", unsafe_allow_html=True)
 
-    pages = ["Тесттер тізімі", "Сұрақ қосу", "Деректерді басқару (JSON)", "Менің нәтижелерім", "Профиль"]
+    pages = ["Тесттер тізімі", "140 балдық статистика", "Сұрақ қосу", "Деректерді басқару (JSON)", "Менің нәтижелерім", "Профиль"]
     for p in pages:
         if st.sidebar.button(p, key=f"btn_{p}", use_container_width=True):
             st.session_state.current_page = p
@@ -278,13 +266,6 @@ else:
 
     if menu == "Тесттер тізімі":
         st.header("Инфо-Мат Бағыты (Кезеңдерге бөлінген тесттер)")
-        
-        st.subheader("📊 140 балдық жүйе бойынша сіздің өсу динамикаңыз")
-        if st.session_state.score_140_history:
-            df_140 = pd.DataFrame(st.session_state.score_140_history)
-            chart_df = df_140.set_index("test_list")[["score"]]
-            st.line_chart(chart_df)
-            st.dataframe(df_140.rename(columns={"test_list": "Тесттер тізімі", "score": "Жинаған балл"}), use_container_width=True)
         
         st.markdown("---")
         subjects = ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"]
@@ -312,6 +293,33 @@ else:
                             st.session_state.tests = [t for t in st.session_state.tests if t["id"] != test["id"]]
                             st.rerun()
                     st.markdown("---")
+
+    elif menu == "140 балдық статистика":
+        st.header("🎯 140 балдық жүйе бойынша нәтижелер және график")
+        st.write("Бұл жерден өз балдарыңызды қосып, өсу динамикаңызды график арқылы қадағалай аласыз.")
+        
+        st.markdown("---")
+        
+        # Балл қосуға арналған бөлек форма панелі
+        with st.form("add_140_score_main"):
+            st.subheader("Жаңа нәтиже енгізу")
+            test_list_input = st.text_input("Тесттер тізімі", f"Нұсқа №{len(st.session_state.score_140_history)+1}")
+            new_score = st.number_input("Жинаған балл (макс 140)", min_value=0, max_value=140, value=100)
+            submitted_score = st.form_submit_button("Баллды қосу")
+            if submitted_score:
+                st.session_state.score_140_history.append({"test_list": test_list_input, "score": new_score})
+                st.success("Балл сәтті қосылды!")
+                st.rerun()
+                
+        st.markdown("---")
+        st.subheader("📊 Өсу динамикасының графигі")
+        if st.session_state.score_140_history:
+            df_140 = pd.DataFrame(st.session_state.score_140_history)
+            chart_df = df_140.set_index("test_list")[["score"]]
+            st.line_chart(chart_df)
+            st.dataframe(df_140.rename(columns={"test_list": "Тесттер тізімі", "score": "Жинаған балл"}), use_container_width=True)
+        else:
+            st.info("Әзірге енгізілген балдар жоқ.")
                 
     elif menu == "Сұрақ қосу":
         st.header("Жаңа сұрақ немесе кезеңдік тест қосу")
