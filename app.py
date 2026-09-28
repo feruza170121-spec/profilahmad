@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import os
+import pandas as pd
 
 # Беттің баптауы
 st.set_page_config(page_title="Жеке Тест Платформасы", page_icon="🔐", layout="centered")
@@ -69,7 +70,6 @@ def login_page():
     st.title("🔐 Жеке Кабинетке Кіру")
     users = load_data(USERS_FILE)
     
-    # Егер файлдан оқылған деректер сөздік болмаса (қателік болса), түзеу
     if not isinstance(users, dict):
         users = {"admin": "secret123"}
         save_data(USERS_FILE, users)
@@ -104,18 +104,22 @@ def main_app():
     
     # 1. ПӘНДЕР БОЙЫНША БӨЛЕК ТЕСТ ТАПСЫРУ
     if menu == "Тест тапсыру":
-        st.title("📝 Тест тапсыру")
+        st.title("📝 Пәндік тест тапсыру")
         
         if not tests:
             st.warning("Әзірге тест сұрақтары жоқ.")
             return
             
-        # Қолжетімді пәндер тізімін жинау
-        subjects = list(set(q.get("subject", "Жалпы") for q in tests))
+        # Барлық сұрақтардан тек нақты пән аттарын жинау (жалпы дегенді алып тастап, таза пәндерді шығару)
+        subjects = sorted(list(set(q.get("subject", "").strip() for q in tests if q.get("subject"))))
         
-        # Егер тест басталмаған болса, пән таңдауды көрсету
+        if not subjects:
+            st.warning("Базада пәндер көрсетілген сұрақтар жоқ.")
+            return
+
+        # Егер тест басталмаған болса, пән таңдау экранға шығады
         if not st.session_state.test_started:
-            st.subheader("Пәнді таңдаңыз:")
+            st.subheader("Өзіңізге қажетті пәнді таңдаңыз:")
             selected = st.selectbox("Пән:", subjects, key="subject_select")
             
             if st.button("Тестті бастау"):
@@ -123,15 +127,15 @@ def main_app():
                 st.session_state.selected_subject = selected
                 st.rerun()
         else:
-            # Тест басталды, сұрақтарды көрсету
+            # Тест басталды, тек таңдалған пәннің сұрақтары шығады
             current_sub = st.session_state.selected_subject
-            st.subheader(f"Таңдалған пән: {current_sub}")
+            st.subheader(f"📚 Таңдалған пән: {current_sub}")
             
-            subject_tests = [q for q in tests if q.get("subject", "Жалпы") == current_sub]
+            subject_tests = [q for q in tests if q.get("subject") == current_sub]
             
             if not subject_tests:
-                st.warning("Бұл пәнде әзірге сұрақтар жоқ.")
-                if st.button("Басқа пән таңдау"):
+                st.warning(f"'{current_sub}' пәні бойынша әзірге сұрақтар жоқ.")
+                if st.button("Бетті қайтару / Пән таңдауға оралу"):
                     st.session_state.test_started = False
                     st.rerun()
                 return
@@ -141,12 +145,11 @@ def main_app():
                 user_answers = {}
                 for i, q in enumerate(subject_tests):
                     st.markdown(f"**{i+1}. {q['question']}**")
-                    # Жауаптарды көрсету алдында нұсқаларды реттеу (қажет болса)
                     options = q['options']
                     user_answers[q['id']] = st.radio("Жауапты таңдаңыз:", options, key=f"q_{q['id']}")
                     st.write("---")
                     
-                submitted = st.form_submit_button("Тестті аяқтау")
+                submitted = st.form_submit_button("Тестті аяқтау және нәтижені көру")
                 
                 if submitted:
                     for q in subject_tests:
@@ -165,40 +168,37 @@ def main_app():
                         "score": result_str
                     })
                     save_data(RESULTS_FILE, results)
-                    
-                    # Қайтадан бастау батырмасы
-                    if st.button("Басқа тест тапсыру"):
-                        st.session_state.test_started = False
-                        st.rerun()
+            
+            if st.button("Басқа пән таңдауға қайту"):
+                st.session_state.test_started = False
+                st.rerun()
 
-    # 2. СҰРАҚ ҚОСУ ЖӘНЕ ӨЗГЕРТУ (ӨШІРУ БАТЫРМАСЫМЕН)
+    # 2. СҰРАҚ ҚОСУ ЖӘНЕ ӨШІРУ
     elif menu == "Сұрақ қосу / Өзгерту":
-        st.title("➕ Сұрақтарды басқару")
+        st.title("➕ Сұрақтарды басқару және өшіру")
         
-        # Сұрақтарды өшіру логикасы
         if "delete_q_id" in st.session_state:
             q_id_to_del = st.session_state.delete_q_id
             updated_tests = [q for q in tests if q["id"] != q_id_to_del]
             save_data(TESTS_FILE, updated_tests)
             del st.session_state.delete_q_id
-            st.success(f"ID: {q_id_to_del} сұрақ өшірілді!")
+            st.success("Сұрақ сәтті өшірілді!")
             st.rerun()
 
-        tab1, tab2 = st.tabs(["Барлық сұрақтар", "Жаңа сұрақ қосу"])
+        tab1, tab2 = st.tabs(["Қолданыстағы сұрақтар", "Жаңа сұрақ қосу"])
         
         with tab1:
-            st.subheader("Қолданыстағы сұрақтар")
+            st.subheader("Барлық сұрақтар тізімі")
             if not tests:
                 st.info("Әзірге сұрақтар жоқ.")
             else:
                 for q in tests:
-                    with st.expander(f"ID: {q['id']} - {q['subject']} - {q['question'][:50]}..."):
-                        st.markdown(f"**Пән:** {q['subject']}")
+                    with st.expander(f"[{q.get('subject', 'Билгісіз пән')}] ID: {q['id']} - {q['question'][:40]}..."):
+                        st.markdown(f"**Пән:** {q.get('subject')}")
                         st.markdown(f"**Сұрақ:** {q['question']}")
                         st.markdown(f"**Нұсқалар:** {q['options']}")
                         st.markdown(f"**Дұрыс жауап:** {q['answer']}")
                         
-                        # Өшіру батырмасы
                         if st.button("Сұрақты өшіру", key=f"del_{q['id']}"):
                             st.session_state.delete_q_id = q['id']
                             st.rerun()
@@ -206,10 +206,11 @@ def main_app():
         with tab2:
             st.subheader("Жаңа сұрақ қосу")
             with st.form("add_question_form"):
-                subject_input = st.text_input("Пән атауы (мысалы: Математика, Тарих)")
-                new_q = st.text_area("Сұрақ мәтіні")
+                # Пән атауын нақты жазу немесе таңдау
+                subject_input = st.selectbox("Пәнді таңдаңыз немесе жазыңыз:", ["Математика", "Информатика", "Физика", "Тарих", "Ағылшын тілі"])
+                custom_subject = st.text_input("Немесе жаңа пән атауын енгізіңіз (егер жоғарыда жоқ болса):")
                 
-                # Жауап нұсқаларын жеке енгізу
+                new_q = st.text_area("Сұрақ мәтіні")
                 c1 = st.text_input("Нұсқа A")
                 c2 = st.text_input("Нұсқа B")
                 c3 = st.text_input("Нұсқа C")
@@ -220,34 +221,33 @@ def main_app():
                 add_submitted = st.form_submit_button("Сұрақты сақтау")
                 
                 if add_submitted:
-                    if subject_input and new_q and c1 and c2 and correct_ans:
-                        # Дұрыс жауапты мәтін ретінде сақтау (пайдаланушы таңдаған әріпке сәйкес)
+                    final_subject = custom_subject.strip() if custom_subject.strip() else subject_input
+                    if final_subject and new_q and c1 and c2 and correct_ans:
                         options_dict = {"A": c1, "B": c2, "C": c3, "D": c4}
                         selected_correct_text = options_dict.get(correct_ans.upper())
                         
                         if not selected_correct_text:
-                            st.error("Дұрыс жауап нұсқасы (A, B, C, D) дұрыс көрсетілмеді!")
+                            st.error("Дұрыс жауап әрпі дұрыс көрсетілмеді (A, B, C немесе D болуы керек)!")
                         else:
                             new_id = max([q["id"] for q in tests], default=0) + 1
                             new_question_data = {
                                 "id": new_id,
-                                "subject": subject_input.strip(),
+                                "subject": final_subject,
                                 "question": new_q.strip(),
                                 "options": [c1, c2, c3, c4],
-                                "answer": selected_correct_text # Мәтін сақталады
+                                "answer": selected_correct_text
                             }
                             tests.append(new_question_data)
                             save_data(TESTS_FILE, tests)
-                            st.success("Сұрақ базаға сәтті қосылды! (Бетті жаңартыңыз)")
+                            st.success("Сұрақ базаға сәтті қосылды!")
                     else:
-                        st.error("Пән, сұрақ және кем дегенде 2 нұсқа мен дұрыс жауапты толтырыңыз!")
+                        st.error("Барлық міндетті өрістерді толтырыңыз!")
 
     # 3. НӘТИЖЕЛЕРДІ КӨРУ
     elif menu == "Нәтижелер":
         st.title("📊 Тест нәтижелері")
         results = load_data(RESULTS_FILE)
         if results:
-            # Кесте түрінде көрсету
             results_for_df = []
             for r in results:
                 results_for_df.append({
@@ -255,10 +255,9 @@ def main_app():
                     "Пән": r.get('subject', 'Жалпы'),
                     "Ұпай": r['score']
                 })
-            import pandas as pd
             st.dataframe(pd.DataFrame(results_for_df))
             
-            if st.button("Нәтижелерді тазарту"):
+            if st.button("Барлық нәтижелерді тазарту"):
                 save_data(RESULTS_FILE, [])
                 st.rerun()
         else:
@@ -272,7 +271,7 @@ def main_app():
         current_user = st.session_state.username
         
         with st.form("change_credentials_form"):
-            st.write("Парольді немесе логинді өзгерту үшін төменгі өрістерді толтырыңыз:")
+            st.write("Логин немесе парольді өзгерту:")
             new_username = st.text_input("Жаңа логин", value=current_user)
             old_password = st.text_input("Қазіргі пароль", type="password")
             new_password = st.text_input("Жаңа пароль", type="password")
@@ -282,9 +281,7 @@ def main_app():
             if update_submitted:
                 if users.get(current_user) == old_password:
                     if new_username.strip() and new_password.strip():
-                        # Ескі қолданушыны алып тастау
                         del users[current_user]
-                        # Жаңасын қосу
                         users[new_username] = new_password
                         save_data(USERS_FILE, users)
                         
