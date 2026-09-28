@@ -3,11 +3,10 @@ from datetime import datetime
 
 st.set_page_config(page_title="Инфо-Мат УБТ Базасы", layout="centered")
 
-# Сессия күйін инициализациялау
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
-    st.session_state.username = "Админ"
+    st.session_state.username = "Аты-Жөніңіз"
 if "avatar" not in st.session_state:
     st.session_state.avatar = "https://via.placeholder.com/80"
 if "tests" not in st.session_state:
@@ -15,7 +14,7 @@ if "tests" not in st.session_state:
         {
             "id": 1,
             "subject": "Математика тарихы",
-            "title": "Математика тарихы: Бастапқы кезең",
+            "title": "Математика тарихы: Ежелгі кезең",
             "questions": [
                 {
                     "question": "Пифагор теоремасы қай халыққа ерте заманнан белгілі болған?",
@@ -26,6 +25,18 @@ if "tests" not in st.session_state:
         },
         {
             "id": 2,
+            "subject": "Математика тарихы",
+            "title": "Математика тарихы: Орта ғасырлар және Шығыс ғалымдары",
+            "questions": [
+                {
+                    "question": "Әл-Хорезми еңбегінен шыққан математикалық термин:",
+                    "options": ["Алгебра", "Геометрия", "Арифметика", "Тригонометрия"],
+                    "correct": 0
+                }
+            ]
+        },
+        {
+            "id": 3,
             "subject": "Математикалық сауаттылық",
             "title": "Логикалық есептер мен сандар тізбегі",
             "questions": [
@@ -37,7 +48,7 @@ if "tests" not in st.session_state:
             ]
         },
         {
-            "id": 3,
+            "id": 4,
             "subject": "Математика",
             "title": "Алгебра және геометрия негіздері",
             "questions": [
@@ -49,7 +60,7 @@ if "tests" not in st.session_state:
             ]
         },
         {
-            "id": 4,
+            "id": 5,
             "subject": "Информатика",
             "title": "Python және Алгоритмдер",
             "questions": [
@@ -64,7 +75,6 @@ if "tests" not in st.session_state:
 if "results" not in st.session_state:
     st.session_state.results = []
 
-# Логин тексеру экраны
 if not st.session_state.logged_in:
     st.title("Жүйеге кіру")
     username_input = st.text_input("Логин")
@@ -77,39 +87,54 @@ if not st.session_state.logged_in:
         else:
             st.error("Қате логин немесе пароль!")
 else:
-    # Сайдбар (Профиль және Мәзір)
-    st.sidebar.image(st.session_state.avatar, width=100)
-    st.sidebar.markdown(f"### {st.session_state.username}")
+    # Профиль фотосы мен аты-жөні сайдбар шетінде қатар орналасады
+    st.sidebar.markdown("### Профиль")
+    col_img, col_name = st.sidebar.columns([1, 2])
+    with col_img:
+        st.image(st.session_state.avatar, width=60)
+    with col_name:
+        st.markdown(f"**{st.session_state.username}**")
     
-    menu = st.sidebar.selectbox("Мәзір", ["Тесттер тізімі", "Сұрақ қосу", "Менің нәтижелерім", "Профильді баптау", "Шығу"])
+    st.sidebar.markdown("---")
+    
+    menu = st.sidebar.radio("Мәзір", ["Тесттер тізімі", "Сұрақ қосу", "Менің нәтижелерім", "Профильді баптау", "Шығу"])
     
     if menu == "Шығу":
         st.session_state.logged_in = False
         st.rerun()
         
     elif menu == "Тесттер тізімі":
-        st.header("Инфо-Мат Бағыты (Әр тест 50 сұраққа дейін)")
-        for test in st.session_state.tests:
-            with st.container():
-                st.subheader(test["title"])
-                st.write(f"Бөлім: {test['subject']} | Сұрақ саны: {len(test['questions'])} / 50")
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("Бастау", key=f"start_{test['id']}"):
-                        st.session_state.active_test = test
-                        st.session_state.q_index = 0
-                        st.session_state.score = 0
-                        st.rerun()
-                with col2:
-                    if st.button("Өшіру", key=f"del_{test['id']}"):
-                        st.session_state.tests = [t for t in st.session_state.tests if t["id"] != test["id"]]
-                        st.rerun()
-                st.markdown("---")
+        st.header("Инфо-Мат Бағыты (Кезеңдерге бөлінген тесттер)")
+        
+        subjects = ["Математика тарихы", "Математикалық сауаттылық", "Математика", "Информатика"]
+        selected_subject = st.selectbox("Бағытты / Пәнді таңдаңыз:", subjects)
+        
+        filtered_tests = [t for t in st.session_state.tests if t["subject"] == selected_subject]
+        
+        if not filtered_tests:
+            st.info("Бұл бөлімде әзірге тесттер жоқ.")
+        else:
+            for test in filtered_tests:
+                with st.container():
+                    st.subheader(test["title"])
+                    st.write(f"Сұрақ саны: {len(test['questions'])} / 50")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Бастау", key=f"start_{test['id']}"):
+                            st.session_state.active_test = test
+                            st.session_state.q_index = 0
+                            st.session_state.score = 0
+                            st.rerun()
+                    with col2:
+                        if st.button("Өшіру", key=f"del_{test['id']}"):
+                            st.session_state.tests = [t for t in st.session_state.tests if t["id"] != test["id"]]
+                            st.rerun()
+                    st.markdown("---")
                 
     elif menu == "Сұрақ қосу":
-        st.header("Жаңа сұрақ немесе тест қосу")
+        st.header("Жаңа сұрақ немесе кезеңдік тест қосу")
         subject = st.selectbox("Бөлімді таңдаңыз", ["Математика тарихы", "Математикалық сауаттылық", "Математика", "Информатика"])
-        test_title = st.text_input("Тест атауы", "Мысалы: №1 Тест")
+        test_title = st.text_input("Тест атауы (Кезеңі)", "Мысалы: Математика тарихы: Жаңа заман")
         q_text = st.text_area("Сұрақ мәтіні")
         opt0 = st.text_input("1-ші жауап")
         opt1 = st.text_input("2-ші жауап")
@@ -149,14 +174,14 @@ else:
 
     elif menu == "Профильді баптау":
         st.header("Профильді өңдеу")
-        new_name = st.text_input("Атауыңыз (Никнейм)", st.session_state.username)
+        new_name = st.text_input("Аты-жөніңіз", st.session_state.username)
         new_avatar = st.text_input("Аватар сурет сілтемесі (URL)", st.session_state.avatar)
         if st.button("Сақтау"):
             st.session_state.username = new_name
             st.session_state.avatar = new_avatar
             st.success("Профиль сәтті жаңартылды!")
+            st.rerun()
 
-# Тест тапсыру логикасы
 if "active_test" in st.session_state and st.session_state.active_test:
     test = st.session_state.active_test
     st.header(f"Тест: {test['title']}")
