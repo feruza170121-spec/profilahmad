@@ -1,7 +1,7 @@
 import streamlit as st
 import json
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 
 st.set_page_config(page_title="Инфо-Мат УБТ Базасы", layout="centered")
 
@@ -60,7 +60,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Сессиялық айнымалыларды инициализациялау (деректер өшпеуі үшін)
+# Сессиялық айнымалыларды инициализациялау (бан және қателерді санау үшін)
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
@@ -69,6 +69,11 @@ if "avatar" not in st.session_state:
     st.session_state.avatar = "https://static.vecteezy.com/system/resources/previews/003/181/982/non_2x/cyber-hacker-attack-background-skull-vector.jpg"
 if "current_page" not in st.session_state:
     st.session_state.current_page = "Тесттер тізімі"
+
+if "wrong_attempts" not in st.session_state:
+    st.session_state.wrong_attempts = 0
+if "ban_until" not in st.session_state:
+    st.session_state.ban_until = None
 
 if "tests" not in st.session_state:
     st.session_state.tests = [
@@ -102,7 +107,7 @@ if "math_lit_score_history" not in st.session_state:
 if "history_score_history" not in st.session_state:
     st.session_state.history_score_history = []
 
-# ----------------- ЛОГИН ЭКРАНЫ -----------------
+# ----------------- ЛОГИН ЭКРАНЫ (БАН ЖӘНЕ ПАРОЛЬ ЛОГИКАСЫ) -----------------
 if not st.session_state.logged_in:
     st.write("")
     st.write("")
@@ -112,16 +117,35 @@ if not st.session_state.logged_in:
     with col_l2:
         st.markdown("<p style='text-align: center; font-size: 26px; margin-bottom: 25px;'><b>Ahmadjan Hello!</b></p>", unsafe_allow_html=True)
         
+        # Бан уақытын тексеру
+        if st.session_state.ban_until and datetime.now() < st.session_state.ban_until:
+            remaining_time = int((st.session_state.ban_until - datetime.now()).total_seconds() / 60)
+            st.error(f"⚠️ Тым көп қате енгізілді! Сіз 1 сағатқа блокталдыңыз. Қалған уақыт: шамамен {remaining_time + 1} минут.")
+            st.stop()
+        elif st.session_state.ban_until and datetime.now() >= st.session_state.ban_until:
+            # Бан уақыты бітсе қалпына келтіру
+            st.session_state.ban_until = None
+            st.session_state.wrong_attempts = 0
+
         with st.form("login_form"):
             entered_password = st.text_input("ПК паролі / PIN-код", type="password")
             submit_login = st.form_submit_button("Құлпын ашу")
             
             if submit_login:
-                if entered_password == "7777":
+                if entered_password == "Hello":
                     st.session_state.logged_in = True
+                    st.session_state.wrong_attempts = 0
                     st.rerun()
                 else:
-                    st.error("Қате пароль! Әдепкі пароль: 7777")
+                    st.session_state.wrong_attempts += 1
+                    left_attempts = 10 - st.session_state.wrong_attempts
+                    
+                    if st.session_state.wrong_attempts >= 10:
+                        st.session_state.ban_until = datetime.now() + timedelta(hours=1)
+                        st.error("⚠️ 10 рет қате енгізілді! Жүйе 1 сағатқа бұғатталды.")
+                        st.rerun()
+                    else:
+                        st.error(f"Қате пароль! Қалған әрекет саны: {left_attempts}")
                     
     st.stop()
 
@@ -278,6 +302,7 @@ else:
 
     if st.sidebar.button("🔒 Жүйеден шығу", use_container_width=True):
         st.session_state.logged_in = False
+        st.session_state.wrong_attempts = 0
         st.rerun()
 
     st.sidebar.markdown("---")
