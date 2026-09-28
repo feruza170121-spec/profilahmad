@@ -22,6 +22,7 @@ def init_json_files():
         default_tests = [
             {
                 "id": 1,
+                "test_title": "Математикадан негізгі тест",
                 "subject": "Математика",
                 "question": "2 + 2 * 2 нәтижесі қанша?",
                 "options": ["6", "8", "4", "2"],
@@ -29,6 +30,7 @@ def init_json_files():
             },
             {
                 "id": 2,
+                "test_title": "Python негіздері",
                 "subject": "Информатика",
                 "question": "Python тілінде тізім (list) қандай жақшамен анықталады?",
                 "options": ["{}", "[]", "()", "<>"],
@@ -62,8 +64,8 @@ if "username" not in st.session_state:
     st.session_state.username = ""
 if "test_started" not in st.session_state:
     st.session_state.test_started = False
-if "selected_subject" not in st.session_state:
-    st.session_state.selected_subject = None
+if "selected_test_title" not in st.session_state:
+    st.session_state.selected_test_title = None
 
 # --- КІРУ ПАРАҒЫ ---
 def login_page():
@@ -91,56 +93,61 @@ def login_page():
 # --- НЕГІЗГІ ҚОСЫМША ---
 def main_app():
     st.sidebar.title(f"Қош келдіңіз, {st.session_state.username}!")
-    menu = st.sidebar.radio("Мәзір", ["Тест тапсыру", "Сұрақ қосу / Өзгерту", "Нәтижелер", "Логин/Парольді өзгерту"])
+    menu = st.sidebar.radio("Мәзір", ["Тесттер", "Сұрақ қосу / Өзгерту", "Нәтижелер", "Логин/Парольді өзгерту"])
     
     if st.sidebar.button("Жүйеден шығу"):
         st.session_state.logged_in = False
         st.session_state.username = ""
         st.session_state.test_started = False
-        st.session_state.selected_subject = None
+        st.session_state.selected_test_title = None
         st.rerun()
         
     tests = load_data(TESTS_FILE)
     
-    # 1. ПӘНДЕР БОЙЫНША БӨЛЕК ТЕСТ ТАПСЫРУ
-    if menu == "Тест тапсыру":
-        st.title("📝 Пәндік тест тапсыру")
+    # 1. ТЕСТТЕР БӨЛІМІ (АТАУЫ БОЙЫНША ТАПСЫРУ)
+    if menu == "Тесттер":
+        st.title("📝 Тесттер тізімі және тапсыру")
         
         if not tests:
-            st.warning("Әзірге тест сұрақтары жоқ.")
+            st.warning("Әзірге жасақталған тесттер жоқ.")
             return
             
-        subjects = sorted(list(set(q.get("subject", "").strip() for q in tests if q.get("subject"))))
+        # Барлық тест атауларын жинау
+        test_titles = sorted(list(set(q.get("test_title", "Атаусыз тест").strip() for q in tests if q.get("test_title"))))
         
-        if not subjects:
-            st.warning("Базада пәндер көрсетілген сұрақтар жоқ.")
+        if not test_titles:
+            st.warning("Базада тест атаулары табылмады.")
             return
 
         if not st.session_state.test_started:
-            st.subheader("Өзіңізге қажетті пәнді таңдаңыз:")
-            selected = st.selectbox("Пән:", subjects, key="subject_select")
+            st.subheader("Тапсыру үшін тест атауын таңдаңыз:")
+            selected_title = st.selectbox("Тест атауы:", test_titles, key="test_title_select")
+            
+            # Таңдалған тест туралы қысқаша ақпарат
+            selected_tests_preview = [q for q in tests if q.get("test_title") == selected_title]
+            st.info(1 * f"Бұл тестте барлығы {len(selected_tests_preview)} сұрақ бар (Максимум 50 сұрақ).")
             
             if st.button("Тестті бастау"):
                 st.session_state.test_started = True
-                st.session_state.selected_subject = selected
+                st.session_state.selected_test_title = selected_title
                 st.rerun()
         else:
-            current_sub = st.session_state.selected_subject
-            st.subheader(f"📚 Таңдалған пән: {current_sub}")
+            current_title = st.session_state.selected_test_title
+            st.subheader(f"📚 Тест атауы: {current_title}")
             
-            subject_tests = [q for q in tests if q.get("subject") == current_sub]
+            current_test_questions = [q for q in tests if q.get("test_title") == current_title]
             
-            if not subject_tests:
-                st.warning(f"'{current_sub}' пәні бойынша әзірге сұрақтар жоқ.")
-                if st.button("Бетті қайтару / Пән таңдауға оралу"):
+            if not current_test_questions:
+                st.warning(f"'{current_title}' бойынша сұрақтар табылмады.")
+                if st.button("Тесттер тізіміне оралу"):
                     st.session_state.test_started = False
                     st.rerun()
                 return
 
             score = 0
-            with st.form(f"test_form_{current_sub}"):
+            with st.form(f"test_form_{current_title}"):
                 user_answers = {}
-                for i, q in enumerate(subject_tests):
+                for i, q in enumerate(current_test_questions):
                     st.markdown(f"**{i+1}. {q['question']}**")
                     options = q['options']
                     user_answers[q['id']] = st.radio("Жауапты таңдаңыз:", options, key=f"q_{q['id']}")
@@ -149,29 +156,31 @@ def main_app():
                 submitted = st.form_submit_button("Тестті аяқтау және нәтижені көру")
                 
                 if submitted:
-                    for q in subject_tests:
+                    for q in current_test_questions:
                         if user_answers.get(q['id']) == q['answer']:
                             score += 1
                     
-                    result_str = f"{score} / {len(subject_tests)}"
+                    result_str = f"{score} / {len(current_test_questions)}"
                     st.balloons()
-                    st.success(f"Тест аяқталды! Сіздің нәтижеңіз ({current_sub}): {result_str}")
+                    st.success(f"Тест аяқталды! Сіздің нәтижеңіз ({current_title}): {result_str}")
                     
                     results = load_data(RESULTS_FILE)
                     results.append({
                         "user": st.session_state.username,
-                        "subject": current_sub,
-                        "score": result_str
+                        "test_title": current_title,
+                        "score": score,
+                        "total": len(current_test_questions),
+                        "score_str": result_str
                     })
                     save_data(RESULTS_FILE, results)
             
-            if st.button("Басқа пән таңдауға қайту"):
+            if st.button("Басқа тест таңдауға қайту"):
                 st.session_state.test_started = False
                 st.rerun()
 
-    # 2. СҰРАҚ ҚОСУ ЖӘНЕ ӨШІРУ
+    # 2. СҰРАҚ ҚОСУ ЖӘНЕ ӨШІРУ (МАКСИМУМ 50 СҰРАҚ ШЕКТЕУІМЕН)
     elif menu == "Сұрақ қосу / Өзгерту":
-        st.title("➕ Сұрақтарды басқару және өшіру")
+        st.title("➕ Тест құрастыру және сұрақтарды басқару")
         
         if "delete_q_id" in st.session_state:
             q_id_to_del = st.session_state.delete_q_id
@@ -184,13 +193,15 @@ def main_app():
         tab1, tab2 = st.tabs(["Қолданыстағы сұрақтар", "Жаңа сұрақ қосу"])
         
         with tab1:
-            st.subheader("Барлық сұрақтар тізімі")
+            st.subheader("Барлық сұрақтар мен тесттер тізімі")
             if not tests:
                 st.info("Әзірге сұрақтар жоқ.")
             else:
                 for q in tests:
-                    with st.expander(f"[{q.get('subject', 'Билгісіз пән')}] ID: {q['id']} - {q['question'][:40]}..."):
-                        st.markdown(f"**Пән:** {q.get('subject')}")
+                    t_title = q.get('test_title', 'Атаусыз тест')
+                    with st.expander(f"[{t_title}] ID: {q['id']} - {q['question'][:40]}..."):
+                        st.markdown(f"**Тест атауы:** {t_title}")
+                        st.markdown(f"**Пән:** {q.get('subject', 'Көрсетілмеген')}")
                         st.markdown(f"**Сұрақ:** {q['question']}")
                         st.markdown(f"**Нұсқалар:** {q['options']}")
                         st.markdown(f"**Дұрыс жауап:** {q['answer']}")
@@ -200,10 +211,17 @@ def main_app():
                             st.rerun()
 
         with tab2:
-            st.subheader("Жаңа сұрақ қосу")
+            st.subheader("Жаңа сұрақ қосу (Әр тестке макс. 50 сұрақ)")
+            
+            # Қолда бар тест атауларының тізімі (жаңасын енгізу мүмкіндігімен)
+            existing_titles = list(set(q.get("test_title", "Атаусыз тест") for q in tests))
+            
             with st.form("add_question_form"):
-                subject_input = st.selectbox("Пәнді таңдаңыз немесе жазыңыз:", ["Математика", "Информатика", "Физика", "Тарих", "Ағылшын тілі"])
-                custom_subject = st.text_input("Немесе жаңа пән атауын енгізіңіз (егер жоғарыда жоқ болса):")
+                st.markdown("### Тесттің атауы")
+                test_title_input = st.selectbox("Бар тест атауын таңдаңыз немесе төменге жазыңыз:", ["-- Жалпы тест --"] + existing_titles)
+                custom_test_title = st.text_input("Немесе жаңа тест атауын енгізіңіз:")
+                
+                subject_input = st.selectbox("Пәні:", ["Математика", "Информатика", "Физика", "Тарих", "Ағылшын тілі", "Басқа"])
                 
                 new_q = st.text_area("Сұрақ мәтіні")
                 c1 = st.text_input("Нұсқа A")
@@ -211,47 +229,65 @@ def main_app():
                 c3 = st.text_input("Нұсқа C")
                 c4 = st.text_input("Нұсқа D")
                 
-                # МТІН ЖАЗУДЫҢ ОРНЫНА ТАҢДАУҒА АЙНАЛДЫРУ (selectbox)
                 correct_ans_letter = st.selectbox("Дұрыс жауаптың әрпін таңдаңыз:", ["A", "B", "C", "D"])
                 
                 add_submitted = st.form_submit_button("Сұрақты сақтау")
                 
                 if add_submitted:
-                    final_subject = custom_subject.strip() if custom_subject.strip() else subject_input
-                    if final_subject and new_q and c1 and c2:
-                        options_dict = {"A": c1, "B": c2, "C": c3, "D": c4}
-                        selected_correct_text = options_dict.get(correct_ans_letter)
-                        
-                        if not selected_correct_text:
-                            st.error("Таңдалған әріпке сәйкес келетін нұсқа бос болмауы тиіс!")
-                        else:
-                            new_id = max([q["id"] for q in tests], default=0) + 1
-                            new_question_data = {
-                                "id": new_id,
-                                "subject": final_subject,
-                                "question": new_q.strip(),
-                                "options": [c1, c2, c3, c4],
-                                "answer": selected_correct_text
-                            }
-                            tests.append(new_question_data)
-                            save_data(TESTS_FILE, tests)
-                            st.success("Сұрақ базаға сәтті қосылды!")
+                    # Тест атауын анықтау
+                    final_test_title = custom_test_title.strip() if custom_test_title.strip() else (test_title_input if test_title_input != "-- Жалпы тест --" else "Жалпы тест")
+                    
+                    # Лимитты тексеру (Максимум 50 сұрақ)
+                    current_count_in_test = len([q for q in tests if q.get("test_title") == final_test_title])
+                    
+                    if current_count_in_test >= 50:
+                        st.error(f"❌ Кешіріңіз, '{final_test_title}' тест атауында сұрақтар саны максималды шектеуге (50 сұрақ) жетті!")
                     else:
-                        st.error("Пән, сұрақ және кем дегенде A мен B нұсқаларын толтырыңыз!")
+                        if final_test_title and new_q and c1 and c2:
+                            options_dict = {"A": c1, "B": c2, "C": c3, "D": c4}
+                            selected_correct_text = options_dict.get(correct_ans_letter)
+                            
+                            if not selected_correct_text:
+                                st.error("Таңдалған әріпке сәйкес келетін нұсқа бос болмауы тиіс!")
+                            else:
+                                new_id = max([q["id"] for q in tests], default=0) + 1
+                                new_question_data = {
+                                    "id": new_id,
+                                    "test_title": final_test_title,
+                                    "subject": subject_input,
+                                    "question": new_q.strip(),
+                                    "options": [c1, c2, c3, c4],
+                                    "answer": selected_correct_text
+                                }
+                                tests.append(new_question_data)
+                                save_data(TESTS_FILE, tests)
+                                st.success(f"Сәтті қосылды! Бұл тестте қазір {current_count_in_test + 1} / 50 сұрақ бар.")
+                        else:
+                            st.error("Тест атауы, сұрақ және кем дегенде A мен B нұсқаларын толтырыңыз!")
 
-    # 3. НӘТИЖЕЛЕРДІ КӨРУ
+    # 3. НӘТИЖЕЛЕРДІ ГРАФИК ТҮРІНДЕ КӨРСЕТУ
     elif menu == "Нәтижелер":
-        st.title("📊 Тест нәтижелері")
+        st.title("📊 Тест нәтижелері (Графика)")
         results = load_data(RESULTS_FILE)
+        
         if results:
-            results_for_df = []
+            chart_data = []
             for r in results:
-                results_for_df.append({
-                    "Қолданушы": r['user'],
-                    "Пән": r.get('subject', 'Жалпы'),
-                    "Ұпай": r['score']
+                score_val = r.get('score', 0)
+                chart_data.append({
+                    "Қолданушы": r.get('user', 'Белгісіз'),
+                    "Тест атауы": r.get('test_title', 'Белгісіз тест'),
+                    "Ұпай": score_val
                 })
-            st.dataframe(pd.DataFrame(results_for_df))
+            
+            df = pd.DataFrame(chart_data)
+            
+            st.subheader("📈 Қолданушылардың тесттер бойынша жинаған ұпайлары:")
+            st.bar_chart(df.set_index("Қолданушы")["Ұпай"])
+            
+            st.write("---")
+            st.subheader("📋 Толық мәліметтер кестесі:")
+            st.dataframe(df)
             
             if st.button("Барлық нәтижелерді тазарту"):
                 save_data(RESULTS_FILE, [])
