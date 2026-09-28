@@ -195,7 +195,7 @@ def main_app():
         current_user = st.session_state.username
         
         with st.form("change_credentials_form"):
-            st.write(парольді немесе логинді өзгерту үшін төменгі өрістерді толтырыңыз:")
+            st.write("Парольді немесе логинді өзгерту үшін төменгі өрістерді толтырыңыз:")
             new_username = st.text_input("Жаңа логин", value=current_user)
             old_password = st.text_input("Қазіргі пароль", type="password")
             new_password = st.text_input("Жаңа пароль", type="password")
@@ -205,7 +205,6 @@ def main_app():
             if update_submitted:
                 if users.get(current_user) == old_password:
                     if new_username.strip() and new_password.strip():
-                        # Ескі қолданушыны өшіріп, жаңасын жазу
                         del users[current_user]
                         users[new_username] = new_password
                         save_data(USERS_FILE, users)
