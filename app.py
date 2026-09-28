@@ -99,7 +99,6 @@ if "tests" not in st.session_state:
 if "results" not in st.session_state:
     st.session_state.results = []
 
-# Бастапқыда 0 болып тұруы үшін бұл тізімді бос қалдырамыз
 if "score_140_history" not in st.session_state:
     st.session_state.score_140_history = []
 
@@ -293,7 +292,7 @@ else:
 
     elif menu == "140 балдық статистика":
         st.header("🎯 140 балдық жеке статистика және график")
-        st.write("Бұл жерде башында барлық мәлімет 0 болып тұрады. Төменден өз нәтижелеріңізді енгізіп, графикті көтере аласыз[cite: 9].")
+        st.write("Бұл жерде башында барлық мәлімет 0 болып тұрады. Төменден өз нәтижелеріңізді қосып, қажетсіздерін өшіре аласыз.")
         
         st.markdown("---")
         
@@ -310,13 +309,24 @@ else:
                 
         st.markdown("---")
         st.subheader("📊 Баллдардың өсу графигі")
+        
         if st.session_state.score_140_history:
             df_140 = pd.DataFrame(st.session_state.score_140_history)
             chart_df = df_140.set_index("test_list")[["score"]]
             st.line_chart(chart_df)
             
-            st.subheader("📋 Енгізілген балдар тізімі")
-            st.dataframe(df_140.rename(columns={"test_list": "Тесттер тізімі", "score": "Жинаған балл"}), use_container_width=True)
+            st.subheader("📋 Енгізілген балдар тізімі (Жою мүмкіндігімен)")
+            
+            # Кестедегі әрбір элементті жоюға арналған интерфейс
+            for idx, item in enumerate(st.session_state.score_140_history):
+                col_info, col_del = st.columns([4, 1])
+                with col_info:
+                    st.write(f"🔹 **{item['test_list']}** — Жинаған балл: **{item['score']}**")
+                with col_del:
+                    if st.button("🗑️ Өшіру", key=f"del_140_{idx}"):
+                        st.session_state.score_140_history.pop(idx)
+                        st.rerun()
+                st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
         else:
             st.info("Әзірге балдар енгізілмеді (График 0 де тұр). Жоғарыдан өз нәтижеңізді енгізіңіз!")
                 
