@@ -90,7 +90,7 @@ if "tests" not in st.session_state:
 if "results" not in st.session_state:
     st.session_state.results = []
 
-# Статистика тарихтары (деректер сақталуы үшін)
+# Статистика тарихтары
 if "score_140_history" not in st.session_state:
     st.session_state.score_140_history = []
 if "math_score_history" not in st.session_state:
@@ -283,20 +283,33 @@ else:
     st.sidebar.markdown("---")
     st.sidebar.markdown("<p style='font-size: 18px; margin-bottom: 10px;'><b>Мәзір</b></p>", unsafe_allow_html=True)
 
-    pages = [
-        "Тесттер тізімі", 
-        "140 балдық статистика", 
-        "Математика (50 балл)", 
-        "Информатика (50 балл)", 
-        "Математикалық сауаттылық (10 балл)", 
-        "Қазақстан тарихы (20 балл)", 
+    # Негізгі кнопкалар
+    if st.sidebar.button("Тесттер тізімі", key="btn_tests", use_container_width=True):
+        st.session_state.current_page = "Тесттер тізімі"
+        st.rerun()
+
+    # 140 балдық статистика мен пәндерді біріктіріп шығатын ашылмалы панель (Expander)
+    with st.sidebar.expander("📊 140 балдық статистика", expanded=False):
+        stat_pages = [
+            "Жалпы 140 балдық статистика",
+            "Математика (50 балл)",
+            "Информатика (50 балл)",
+            "Математикалық сауаттылық (10 балл)",
+            "Қазақстан тарихы (20 балл)"
+        ]
+        for sp in stat_pages:
+            if st.button(sp, key=f"btn_{sp}", use_container_width=True):
+                st.session_state.current_page = sp
+                st.rerun()
+
+    other_pages = [
         "Сұрақ қосу", 
         "Сұрақтарды басқару", 
         "Деректерді басқару (JSON)", 
         "Менің нәтижелерім", 
         "Профиль"
     ]
-    for p in pages:
+    for p in other_pages:
         if st.sidebar.button(p, key=f"btn_{p}", use_container_width=True):
             st.session_state.current_page = p
             st.rerun()
@@ -333,10 +346,9 @@ else:
                             st.rerun()
                     st.markdown("---")
 
-    elif menu == "140 балдық статистика":
+    elif menu == "Жалпы 140 балдық статистика":
         st.header("🎯 140 балдық жеке статистика және график")
         
-        # Form сыртына шығарылды, сонда батырманы басқанда жазғандар ошып кетпейді
         st.subheader("Жаңа нәтиже қосу")
         test_list_input = st.text_input("Тесттер тізімі / Нұсқа атауы", f"Нұсқа №{len(st.session_state.score_140_history)+1}", key="input_140_title")
         new_score = st.number_input("Жинаған балл (макс 140)", min_value=0, max_value=140, value=0, key="input_140_score")
