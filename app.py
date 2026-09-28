@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import os
 import pandas as pd
+import plotly.express as px
 
 # Беттің баптауы
 st.set_page_config(page_title="Жеке Тест Платформасы", page_icon="🔐", layout="centered")
@@ -159,7 +160,6 @@ def main_app():
                             score += 1
                     
                     result_str = f"{score} / {len(current_test_questions)}"
-                    # Шарлар алынып тасталды
                     st.success(f"Тест аяқталды! Сіздің нәтижеңіз ({current_title}): {result_str}")
                     
                     results = load_data(RESULTS_FILE)
@@ -255,27 +255,54 @@ def main_app():
                                 save_data(TESTS_FILE, tests)
                                 st.success(f"Сәтті қосылды! Бұл тестте қазір {current_count_in_test + 1} / 50 сұрақ бар.")
                         else:
-                            st.error("Тест атауын, сұрақ пен кем дегенде A және B нұсқаларын толтырыңыз!")
+                            st.error("Тест атауын, сұрақ пен кем дегенде A және Б нұсқаларын толтырыңыз!")
 
-    # 3. НӘТИЖЕЛЕРДІ ГРАФИК ТҮРІНДЕ КӨРСЕТУ
+    # 3. НӘТИЖЕЛЕРДІ ТҮРЛІ-ТҮСТІ ГРАФИК ТҮРІНДЕ КӨРСЕТУ (Пайыздық шкала бойынша)
     elif menu == "Нәтижелер":
-        st.title("📊 Тест нәтижелері (Графика)")
+        st.title("📊 Тест нәтижелері (Түрлі-түсті графика)")
         results = load_data(RESULTS_FILE)
         
         if results:
             chart_data = []
             for r in results:
-                score_val = r.get('score', 0)
+                score = r.get('score', 0)
+                total = r.get('total', 50) # Максимум 50 сұрақ ескеріледі
+                percentage = (score / total) * 100 if total > 0 else 0
+                
+                # Түстерді пайызға қарай бөлу (Қызыл, Сары, Жасыл)
+                if percentage < 50:
+                    status_color = "Қызыл (Төмен)"
+                elif percentage < 75:
+                    status_color = "Сары (Орташа)"
+                else:
+                    status_color = "Жасыл (Жақсы)"
+
                 chart_data.append({
                     "Қолданушы": r.get('user', 'Белгісіз'),
                     "Тест атауы": r.get('test_title', 'Белгісіз тест'),
-                    "Ұпай": score_val
+                    "Ұпай": score,
+                    "Деңгейі": status_color
                 })
             
             df = pd.DataFrame(chart_data)
             
-            st.subheader("📈 Қолданушылардың тесттер бойынша жинаған ұпайлары:")
-            st.bar_chart(df.set_index("Қолданушы")["Ұпай"])
+            st.subheader("📈 Нәтижелердің деңгей мен түс бойынша диаграммасы:")
+            
+            # Plotly көмегімен әр түрлі түске боялған интерактивті график құру
+            fig = px.bar(
+                df, 
+                x="Қолданушы", 
+                y="Ұпай", 
+                color="Деңгейі", 
+                hover_data=["Тест атауы"],
+                color_discrete_map={
+                    "Қызыл (Төмен)": "#ff4d4d",
+                    "Сары (Орташа)": "#ffcc00",
+                    "Жасыл (Жақсы)": "#2eb82e"
+                },
+                text="Ұпай"
+            )
+            st.plotly_chart(fig, use_container_width=True)
             
             st.write("---")
             st.subheader("📋 Толық мәліметтер кестесі:")
