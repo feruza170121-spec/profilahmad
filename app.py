@@ -44,23 +44,18 @@ st.markdown("""
     .certificate {
         background: linear-gradient(135deg, #111111 0%, #000000 100%);
         border: 4px solid #00FF66;
-        padding: 60px;
+        padding: 40px;
         border-radius: 20px;
         text-align: center;
-        transform: perspective(1000px) rotateX(3deg);
         box-shadow: 0 25px 50px rgba(0, 255, 102, 0.3), inset 0 0 30px rgba(0, 255, 102, 0.1);
-        margin: 30px auto;
+        margin: 20px auto;
     }
-    .certificate h2 {
-        font-size: 32px !important;
-        letter-spacing: 2px;
-    }
-    .certificate h1 {
-        font-size: 44px !important;
-        text-shadow: 0 0 15px rgba(0, 255, 102, 0.5);
-    }
-    .certificate p {
-        font-size: 20px !important;
+    .error-box {
+        background-color: rgba(30, 0, 0, 0.8);
+        border: 2px solid #FF3333;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 15px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -142,8 +137,12 @@ if "active_test" in st.session_state and st.session_state.active_test:
         st.session_state.user_answers = {}
     if "marked_questions" not in st.session_state:
         st.session_state.marked_questions = set()
-
+    
+    # Таймерді іске қосу (Мысалы, барлық тестке 15 минут немесе сұрақ санына қарай)
     total_questions = len(test["questions"])
+    
+    # Жоғарғы жақта тест барысы мен таймер имитациясы (Streamlit-те тұрақты таймер үшін сессия қолданылады)
+    st.info(⏱️ f"Барлық сұрақтар саны: {total_questions}. Асығыңыз!")
 
     st.write("Сұрақтар нөмірі:")
     cols = st.columns(min(total_questions, 10))
@@ -174,7 +173,6 @@ if "active_test" in st.session_state and st.session_state.active_test:
                     st.session_state.marked_questions.add(q_idx)
                 st.rerun()
 
-        # Егер сұраққа сурет қосылған болса, оны көрсету
         if q.get("image") is not None:
             st.image(q["image"], caption="Сұраққа қатысты сурет", use_column_width=True)
 
@@ -212,10 +210,22 @@ if "active_test" in st.session_state and st.session_state.active_test:
             del st.session_state.marked_questions
             st.rerun()
     else:
+        # Нәтижені есептеу және тек қателерді жинау
         score = 0
+        wrong_answers = []
+        
         for idx, q_data in enumerate(test["questions"]):
-            if st.session_state.user_answers.get(idx) == q_data["correct"]:
+            user_ans = st.session_state.user_answers.get(idx)
+            if user_ans == q_data["correct"]:
                 score += 1
+            else:
+                wrong_answers.append({
+                    "q_num": idx + 1,
+                    "question": q_data["question"],
+                    "options": q_data["options"],
+                    "user_ans": user_ans,
+                    "correct_ans": q_data["correct"]
+                })
         
         total = total_questions
         percent = int((score / total) * 100) if total > 0 else 0
@@ -232,14 +242,31 @@ if "active_test" in st.session_state and st.session_state.active_test:
             <div class="certificate">
                 <h2>🏆 СЕРТИФИКАТ 🏆</h2>
                 <p>Осы сертификат салтанатты түрде төмендегі азаматқа беріледі:</p>
-                <h1 style="color: #ffffff; margin: 20px 0;">{st.session_state.username}</h1>
-                <p><b>{test['title']}</b> тестін сәтті аяқтап, жоғары нәтиже көрсетті!</p>
-                <hr style="border-color: #00FF66; margin: 30px 0;">
-                <p style="font-size: 24px;">Жинаған ұпайыңыз: <b>{score} / {total} ({percent}%)</b></p>
-                <p style="font-size: 14px; color: #888; margin-top: 30px;">Берілген күні: {datetime.now().strftime("%Y-%m-%d %H:%M")}</p>
+                <h1 style="color: #ffffff; margin: 15px 0;">{st.session_state.username}</h1>
+                <p><b>{test['title']}</b> тесті аяқталды!</p>
+                <hr style="border-color: #00FF66; margin: 20px 0;">
+                <p style="font-size: 22px;">Жинаған ұпайыңыз: <b>{score} / {total} ({percent}%)</b></p>
             </div>
         """, unsafe_allow_html=True)
         
+        # Тек қате жіберген сұрақтарды шығару бөлімі
+        st.markdown("---")
+        if wrong_answers:
+            st.subheader(f"❌ Сіз жіберген қателер талдауы ({len(wrong_answers)} қате):")
+            for w in wrong_answers:
+                user_text = w['options'][w['user_ans']] if w['user_ans'] is not None else "Жауап берілмеді"
+                correct_text = w['options'][w['correct_ans']]
+                
+                st.markdown(f"""
+                    <div class="error-box">
+                        <p><b>Сұрақ №{w['q_num']}:</b> {w['question']}</p>
+                        <p style="color: #FF6666;">❌ Сіздің жауабыңыз: <b>{user_text}</b></p>
+                        <p style="color: #00FF66;">✅ Дұрыс жауап: <b>{correct_text}</b></p>
+                    </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.success("🎉 Керемет! Барлық сұраққа дұрыс жауап бердіңіз, қателер жоқ!")
+
         st.write("")
         if st.button("Мәзірге қайту"):
             del st.session_state.active_test
@@ -269,6 +296,7 @@ else:
         "Математикалық сауаттылық (10 балл)", 
         "Қазақстан тарихы (20 балл)", 
         "Сұрақ қосу", 
+        "Сұрақтарды басқару", 
         "Деректерді басқару (JSON)", 
         "Менің нәтижелерім", 
         "Профиль"
@@ -312,62 +340,43 @@ else:
 
     elif menu == "140 балдық статистика":
         st.header("🎯 140 балдық жеке статистика және график")
-        st.write("Бұл жерде басында барлық мәлімет 0 болып тұрады. Графикте көк түспен Максималды балл (140) көрсетілген.")
-        
-        st.markdown("---")
         
         with st.form("add_140_score_main"):
             st.subheader("Жаңа нәтиже қосу")
             test_list_input = st.text_input("Тесттер тізімі / Нұсқа атауы", f"Нұсқа №{len(st.session_state.score_140_history)+1}")
             new_score = st.number_input("Жинаған балл (макс 140)", min_value=0, max_value=140, value=0)
-            submitted_score = st.form_submit_button("Баллды қосу")
-            if submitted_score:
+            if st.form_submit_button("Баллды қосу"):
                 st.session_state.score_140_history.append({"test_list": test_list_input, "score": new_score, "max_score": 140})
                 st.success("Балл сәтті қосылды!")
                 st.rerun()
                 
         st.markdown("---")
-        st.subheader("📊 Баллдардың өсу графигі (Максималды баллмен)")
-        
         if st.session_state.score_140_history:
             df_140 = pd.DataFrame(st.session_state.score_140_history)
             df_140["Макс балл"] = 140
-            chart_df = df_140.set_index("test_list")[["score", "Макс балл"]]
+            st.line_chart(df_140.set_index("test_list")[["score", "Макс балл"]], color=["#00FF66", "#0066FF"])
             
-            st.line_chart(chart_df, color=["#00FF66", "#0066FF"])
-            
-            st.subheader("📋 Енгізілген балдар тізімі (Жою мүмкіндігімен)")
             for idx, item in enumerate(st.session_state.score_140_history):
-                col_info, col_del = st.columns([4, 1])
-                with col_info:
-                    st.write(f"🔹 **{item['test_list']}** — Жинаған балл: **{item['score']}** / 140")
-                with col_del:
-                    if st.button("🗑️ Өшіру", key=f"del_140_{idx}"):
-                        st.session_state.score_140_history.pop(idx)
-                        st.rerun()
-                st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
+                c1, c2 = st.columns([4, 1])
+                c1.write(f"🔹 **{item['test_list']}** — Балл: **{item['score']}** / 140")
+                if c2.button("🗑️ Өшіру", key=f"del_140_{idx}"):
+                    st.session_state.score_140_history.pop(idx)
+                    st.rerun()
         else:
-            st.info("Әзірге балдар енгізілмеді. Жоғарыдан өз нәтижеңізді енгізіңіз!")
+            st.info("Әзірге балдар енгізілмеді.")
 
     elif menu == "Математика (50 балл)":
         st.header("📐 Математика пәні бойынша статистика (Макс: 50 балл)")
-        st.write("Математика пәнінің жеке нәтижелерін енгізіп, өшіріп, көк сызықпен макс балл (50) көрсетілген графигін көре аласыз.")
-        
-        st.markdown("---")
         with st.form("add_math_score_form"):
             math_test_input = st.text_input("Математика нұсқасы", f"Мат. Нұсқа №{len(st.session_state.math_score_history)+1}")
             math_new_score = st.number_input("Жиналған балл (макс 50)", min_value=0, max_value=50, value=0)
-            if st.form_submit_button("Математика баллын қосу"):
+            if st.form_submit_button("Қосу"):
                 st.session_state.math_score_history.append({"test_list": math_test_input, "score": math_new_score})
-                st.success("Қосылды!")
                 st.rerun()
-                
-        st.markdown("---")
         if st.session_state.math_score_history:
             df_math = pd.DataFrame(st.session_state.math_score_history)
             df_math["Макс балл (50)"] = 50
             st.line_chart(df_math.set_index("test_list")[["score", "Макс балл (50)"]], color=["#00FF66", "#0066FF"])
-            
             for idx, item in enumerate(st.session_state.math_score_history):
                 c1, c2 = st.columns([4, 1])
                 c1.write(f"🔹 **{item['test_list']}** — Балл: **{item['score']}** / 50")
@@ -379,23 +388,16 @@ else:
 
     elif menu == "Информатика (50 балл)":
         st.header("💻 Информатика пәні бойынша статистика (Макс: 50 балл)")
-        st.write("Информатика пәнінің нәтижелері және көк сызықпен макс балл (50) көрсетілген графигі.")
-        
-        st.markdown("---")
         with st.form("add_info_score_form"):
             info_test_input = st.text_input("Информатика нұсқасы", f"Инфо. Нұсқа №{len(st.session_state.info_score_history)+1}")
             info_new_score = st.number_input("Жиналған балл (макс 50)", min_value=0, max_value=50, value=0)
-            if st.form_submit_button("Информатика баллын қосу"):
+            if st.form_submit_button("Қосу"):
                 st.session_state.info_score_history.append({"test_list": info_test_input, "score": info_new_score})
-                st.success("Қосылды!")
                 st.rerun()
-                
-        st.markdown("---")
         if st.session_state.info_score_history:
             df_info = pd.DataFrame(st.session_state.info_score_history)
             df_info["Макс балл (50)"] = 50
             st.line_chart(df_info.set_index("test_list")[["score", "Макс балл (50)"]], color=["#00FF66", "#0066FF"])
-            
             for idx, item in enumerate(st.session_state.info_score_history):
                 c1, c2 = st.columns([4, 1])
                 c1.write(f"🔹 **{item['test_list']}** — Балл: **{item['score']}** / 50")
@@ -407,23 +409,16 @@ else:
 
     elif menu == "Математикалық сауаттылық (10 балл)":
         st.header("📊 Математикалық сауаттылық статистикасы (Макс: 10 балл)")
-        st.write("Мат. сауаттылық нәтижелері және көк сызықпен макс балл (10) көрсетілген графигі.")
-        
-        st.markdown("---")
         with st.form("add_math_lit_form"):
             ml_test_input = st.text_input("Мат. сауаттылық нұсқасы", f"МатСау Нұсқа №{len(st.session_state.math_lit_score_history)+1}")
             ml_new_score = st.number_input("Жиналған балл (макс 10)", min_value=0, max_value=10, value=0)
-            if st.form_submit_button("Баллды қосу"):
+            if st.form_submit_button("Қосу"):
                 st.session_state.math_lit_score_history.append({"test_list": ml_test_input, "score": ml_new_score})
-                st.success("Қосылды!")
                 st.rerun()
-                
-        st.markdown("---")
         if st.session_state.math_lit_score_history:
             df_ml = pd.DataFrame(st.session_state.math_lit_score_history)
             df_ml["Макс балл (10)"] = 10
             st.line_chart(df_ml.set_index("test_list")[["score", "Макс балл (10)"]], color=["#00FF66", "#0066FF"])
-            
             for idx, item in enumerate(st.session_state.math_lit_score_history):
                 c1, c2 = st.columns([4, 1])
                 c1.write(f"🔹 **{item['test_list']}** — Балл: **{item['score']}** / 10")
@@ -435,23 +430,16 @@ else:
 
     elif menu == "Қазақстан тарихы (20 балл)":
         st.header("🇰🇿 Қазақстан тарихы статистикасы (Макс: 20 балл)")
-        st.write("Қазақстан тарихы нәтижелері және көк сызықпен макс балл (20) көрсетілген графигі.")
-        
-        st.markdown("---")
         with st.form("add_history_form"):
             hist_test_input = st.text_input("Тарих нұсқасы", f"Тарих Нұсқа №{len(st.session_state.history_score_history)+1}")
             hist_new_score = st.number_input("Жиналған балл (макс 20)", min_value=0, max_value=20, value=0)
-            if st.form_submit_button("Баллды қосу"):
+            if st.form_submit_button("Қосу"):
                 st.session_state.history_score_history.append({"test_list": hist_test_input, "score": hist_new_score})
-                st.success("Қосылды!")
                 st.rerun()
-                
-        st.markdown("---")
         if st.session_state.history_score_history:
             df_hist = pd.DataFrame(st.session_state.history_score_history)
             df_hist["Макс балл (20)"] = 20
             st.line_chart(df_hist.set_index("test_list")[["score", "Макс балл (20)"]], color=["#00FF66", "#0066FF"])
-            
             for idx, item in enumerate(st.session_state.history_score_history):
                 c1, c2 = st.columns([4, 1])
                 c1.write(f"🔹 **{item['test_list']}** — Балл: **{item['score']}** / 20")
@@ -468,8 +456,6 @@ else:
             subject = st.selectbox("Бөлімді таңдаңыз", ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"])
             test_title = st.text_input("Тест атауы (Кезеңі)", "Мысалы: Математика: Тригонометрия")
             q_text = st.text_area("Сұрақ мәтіні")
-            
-            # Сұраққа сурет жүктеу мүмкіндігі
             q_image = st.file_uploader("Сұраққа сурет қосу (Міндетті емес)", type=["png", "jpg", "jpeg"])
             
             opt0 = st.text_input("1-ші жауап")
@@ -486,14 +472,11 @@ else:
                         "question": q_text, 
                         "options": [opt0, opt1, opt2, opt3], 
                         "correct": correct,
-                        "image": q_image # Жүктелген суретті сақтау
+                        "image": q_image
                     }
                     if existing:
-                        if len(existing["questions"]) >= 50:
-                            st.error("Бұл тестте 50 сұрақ толып қалды!")
-                        else:
-                            existing["questions"].append(new_q)
-                            st.success("Сұрақ суретімен сәтті қосылды!")
+                        existing["questions"].append(new_q)
+                        st.success("Сұрақ тестке сәтті қосылды!")
                     else:
                         new_test = {
                             "id": len(st.session_state.tests) + 1,
@@ -502,14 +485,32 @@ else:
                             "questions": [new_q]
                         }
                         st.session_state.tests.append(new_test)
-                        st.success("Жаңа тест пен суретті сұрақ сәтті қосылды!")
+                        st.success("Жаңа тест пен сұрақ сәтті қосылды!")
                 else:
-                    st.error("Барлық негізгі өрістерді толтырыңыз!")
+                    st.error("Барлық өрістерді толтырыңыз!")
+
+    elif menu == "Сұрақтарды басқару":
+        st.header("⚙️ Қосылған сұрақтарды қарау және өшіру")
+        selected_mgmt_subject = st.selectbox("Пәнді таңдаңыз:", ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"])
+        
+        mgmt_tests = [t for t in st.session_state.tests if t["subject"] == selected_mgmt_subject]
+        if notmgmt_tests := mgmt_tests:
+            for t_idx, t in enumerate(notmgmt_tests):
+                st.subheader(f"📁 {t['title']}")
+                for q_i, q in enumerate(t["questions"]):
+                    col_q, col_del_q = st.columns([5, 1])
+                    with col_q:
+                        st.write(f"**Сұрақ {q_i+1}:** {q['question']}")
+                    with col_del_q:
+                        if st.button("🗑️ Жою", key=f"del_q_{t['id']}_{q_i}"):
+                            t["questions"].pop(q_i)
+                            st.rerun()
+                st.markdown("---")
+        else:
+            st.info("Бұл бөлімде сұрақтар жоқ.")
 
     elif menu == "Деректерді басқару (JSON)":
         st.header("JSON арқылы деректерді сақтау және жүктеу")
-        st.write("Барлық сұрақтар мен тесттерді JSON файлына сақтап, кейін қайта жүктей аласыз.")
-        
         json_data = json.dumps(st.session_state.tests, ensure_ascii=False, indent=4)
         st.download_button(
             label="Тесттерді JSON файлына сақтау",
@@ -517,28 +518,25 @@ else:
             file_name="infomat_tests.json",
             mime="application/json"
         )
-        
         st.markdown("---")
-        
         uploaded_file = st.file_uploader("JSON файлын жүктеу арқылы қалпына келтіру", type=["json"])
         if uploaded_file is not None:
             try:
                 loaded_tests = json.load(uploaded_file)
                 if isinstance(loaded_tests, list):
                     st.session_state.tests = loaded_tests
-                    st.success("Деректер сәтті жүктелді және жаңартылды!")
+                    st.success("Деректер сәтті жүктелді!")
                 else:
-                    st.error("Файл форматы қате!")
+                    st.error("Формат қате!")
             except Exception as e:
-                st.error(f"Қате орын алды: {e}")
+                st.error(f"Қате: {e}")
 
     elif menu == "Менің нәтижелерім":
-        st.header("Менің нәтижелерім (Пәндер бойынша прогресс/регресс)")
+        st.header("Менің нәтижелерім")
         if not st.session_state.results:
-            st.info("Әзірге қосымша ішінде тапсырылған тест нәтижелері жоқ.")
+            st.info("Әзірге нәтижелер жоқ.")
         else:
             test_subject_map = {t["title"]: t["subject"] for t in st.session_state.tests}
-            
             formatted_results = []
             for r in st.session_state.results:
                 subj = test_subject_map.get(r["title"], "Басқа пәндер")
@@ -548,45 +546,26 @@ else:
                     "Ұпай": r["score"],
                     "Күні": r["date"]
                 })
-                
             df = pd.DataFrame(formatted_results)
-            unique_subjects = df["Пәні"].unique()
-            
-            selected_subject = st.selectbox("Қай пәннің нәтижесін көргіңіз келеді?", unique_subjects)
-            
-            st.subheader(f"📖 Пән: {selected_subject}")
-            subj_df = df[df["Пәні"] == selected_subject]
-            
-            chart_data = subj_df.reset_index(drop=True)[["Ұпай"]]
-            st.line_chart(chart_data)
-            
-            st.dataframe(subj_df[["Тест атауы", "Ұпай", "Күні"]], use_container_width=True)
+            st.dataframe(df, use_container_width=True)
 
     elif menu == "Профиль":
-        st.header("Профильді басқару және Фотоны өзгерту")
-        
+        st.header("Профильді басқару")
         with st.form("profile_settings_form"):
             new_name = st.text_input("Аты-жөніңіз", st.session_state.username)
-            
-            st.write("📸 Қалаған фотоңызды қою үшін төмендегі әдістердің бірін таңдаңыз:")
             photo_method = st.radio("Фото жүктеу тәсілі:", ["Компьютерден сурет жүктеу", "Интернеттен сурет сілтемесін (URL) жазу"])
-            
             uploaded_image = None
             url_image = ""
-            
             if photo_method == "Компьютерден сурет жүктеу":
-                uploaded_image = st.file_uploader("Суретті таңдаңыз (PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"])
+                uploaded_image = st.file_uploader("Суретті таңдаңыз", type=["png", "jpg", "jpeg"])
             else:
-                url_image = st.text_input("Сурет сілтемесін енгізіңіз (URL)", value="" if isinstance(st.session_state.avatar, str) else "")
+                url_image = st.text_input("Сурет сілтемесі (URL)")
             
-            submitted_profile_changes = st.form_submit_button("Өзгерістерді сақтау")
-            
-            if submitted_profile_changes:
+            if st.form_submit_button("Өзгерістерді сақтау"):
                 st.session_state.username = new_name
                 if photo_method == "Компьютерден сурет жүктеу" and uploaded_image is not None:
                     st.session_state.avatar = uploaded_image
                 elif photo_method == "Интернеттен сурет сілтемесін (URL) жазу" and url_image.strip() != "":
                     st.session_state.avatar = url_image.strip()
-                
-                st.success("Профиль сәтті жаңартылды!")
+                st.success("Сәтті сақталды!")
                 st.rerun()
