@@ -5,7 +5,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="Инфо-Мат УБТ Базасы", layout="centered")
 
-# Қаракөлеңке (қап-қара) фон және жасыл элементтерге арналған CSS стилі
+# Қап-қара фон және жасыл элементтерге арналған CSS стилі
 st.markdown("""
     <style>
     .stApp {
@@ -102,7 +102,7 @@ if "score_140_history" not in st.session_state:
         {"test_list": "Нұсқа №3", "score": 115}
     ]
 
-# ----------------- ЛОГИН ЭКРАНЫ -----------------
+# ----------------- ЛОГИН ЭКРАНЫ (Тақырыпсыз және қалаған фотомен) -----------------
 if not st.session_state.logged_in:
     st.write("")
     st.write("")
@@ -110,7 +110,13 @@ if not st.session_state.logged_in:
     col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
     with col_l2:
         st.markdown("<p style='font-size: 26px; text-align: center;'><b>Hello Ahmad</b></p>", unsafe_allow_html=True)
-        st.image(st.session_state.avatar, width=150)
+        
+        # Аватарды көрсету
+        if isinstance(st.session_state.avatar, str):
+            st.image(st.session_state.avatar, width=150)
+        else:
+            st.image(st.session_state.avatar, width=150)
+            
         st.markdown(f"<p style='text-align: center; font-size: 18px; margin-bottom: 20px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
         
         with st.form("login_form"):
@@ -243,6 +249,7 @@ else:
     # Сайдбардағы Профиль және "Hello Ahmad"
     st.sidebar.markdown("<p style='font-size: 32px; margin-bottom: 5px;'><b>Профиль</b></p>", unsafe_allow_html=True)
     st.sidebar.markdown("<p style='font-size: 20px; color: #00FF66; margin-bottom: 10px;'><b>Hello Ahmad</b></p>", unsafe_allow_html=True)
+    
     st.sidebar.image(st.session_state.avatar, width=120)
     st.sidebar.markdown(f"<p style='font-size: 22px; margin-top: 5px; margin-bottom: 10px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
 
@@ -264,7 +271,7 @@ else:
     st.sidebar.markdown("---")
     st.sidebar.markdown("<p style='font-size: 18px; margin-bottom: 10px;'><b>Мәзір</b></p>", unsafe_allow_html=True)
 
-    pages = ["Тесттер тізімі", "Сұрақ қосу", "Деректерді басқару (JSON)", "Менің нәтижелерім", "Профильді баптау"]
+    pages = ["Тесттер тізімі", "Сұрақ қосу", "Деректерді басқару (JSON)", "Менің нәтижелерім", "Профиль"]
     for p in pages:
         if st.sidebar.button(p, key=f"btn_{p}", use_container_width=True):
             st.session_state.current_page = p
@@ -401,30 +408,31 @@ else:
             
             st.dataframe(subj_df[["Тест атауы", "Ұпай", "Күні"]], use_container_width=True)
 
-    elif menu == "Профильді баптау":
-        st.header("Профильді және Аватарды баптау")
+    elif menu == "Профиль":
+        st.header("Профильді басқару және Фотоны өзгерту")
         
-        with st.form("profile_form"):
+        with st.form("profile_settings_form"):
             new_name = st.text_input("Аты-жөніңіз", st.session_state.username)
             
-            st.write("Аватарды ауыстыру:")
-            avatar_option = st.radio("Әдісті таңдаңыз:", ["Дайын аватарлардың бірін таңдау", "Өз суретіңіздің сілтемесін (URL) енгізу"])
+            st.write("📸 Қалаған фотоңызды қою үшін төмендегі әдістердің бірін таңдаңыз:")
+            photo_method = st.radio("Фото жүктеу тәсілі:", ["Компьютерден сурет жүктеу", "Интернеттен сурет сілтемесін (URL) жазу"])
             
-            preset_avatars = {
-                "Хакер бас сүйегі": "https://static.vecteezy.com/system/resources/previews/003/181/982/non_2x/cyber-hacker-attack-background-skull-vector.jpg",
-                "Кибернетикалық робот": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=60",
-                "Ноутбук / Программист": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=500&auto=format&fit=crop&q=60"
-            }
+            uploaded_image = None
+            url_image = ""
             
-            if avatar_option == "Дайын аватарлардың бірін таңдау":
-                selected_preset = st.selectbox("Аватарды таңдаңыз:", list(preset_avatars.keys()))
-                new_avatar = preset_avatars[selected_preset]
+            if photo_method == "Компьютерден сурет жүктеу":
+                uploaded_image = st.file_uploader("Суретті таңдаңыз (PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"])
             else:
-                new_avatar = st.text_input("Сурет сілтемесі (URL)", st.session_state.avatar)
+                url_image = st.text_input("Сурет сілтемесін енгізіңіз (URL)", value="" if isinstance(st.session_state.avatar, str) else "")
             
-            submitted_profile = st.form_submit_button("Өзгерістерді сақтау")
-            if submitted_profile:
+            submitted_profile_changes = st.form_submit_button("Өзгерістерді сақтау")
+            
+            if submitted_profile_changes:
                 st.session_state.username = new_name
-                st.session_state.avatar = new_avatar
-                st.success("Профиль мен аватар сәтті жаңартылды!")
+                if photo_method == "Компьютерден сурет жүктеу" and uploaded_image is not None:
+                    st.session_state.avatar = uploaded_image
+                elif photo_method == "Интернеттен сурет сілтемесін (URL) жазу" and url_image.strip() != "":
+                    st.session_state.avatar = url_image.strip()
+                
+                st.success("Профиль сәтті жаңартылды!")
                 st.rerun()
