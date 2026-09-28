@@ -61,9 +61,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Авторизация күйін тексеру
+# 1-ші қадам: Жүйеге кіру (Логин / Пароль)
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
+
+# 2-ші қадам: Компьютерді қосқандай қосымша пароль (ПК паролі)
+if "pc_unlocked" not in st.session_state:
+    st.session_state.pc_unlocked = False
 
 if not st.session_state.authenticated:
     st.markdown("<h2 style='text-align: center; color: #00FF66;'>🔐 Жүйеге кіру</h2>", unsafe_allow_html=True)
@@ -81,6 +85,27 @@ if not st.session_state.authenticated:
                 st.rerun()
             else:
                 st.error("Логин немесе пароль қате!")
+
+elif not st.session_state.pc_unlocked:
+    st.markdown("<h2 style='text-align: center; color: #00FF66;'>💻 Компьютерді құлыптан босату</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>Жүйеге толық кіру үшін ПК паролін (немесе PIN-код) енгізіңіз. (Әдепкі пароль: <b>7777</b>)</p>", unsafe_allow_html=True)
+    
+    with st.form("pc_lock_form"):
+        pc_password_input = st.text_input("ПК паролі / PIN-код", type="password")
+        submit_pc = st.form_submit_button("Құлпын ашу")
+        
+        if submit_pc:
+            if pc_password_input == "7777":  # Мұнда өз қалауыңыз бойынша парольді өзгерте аласыз
+                st.session_state.pc_unlocked = True
+                st.success("ПК құлпы сәтті ашылды!")
+                st.rerun()
+            else:
+                st.error("ПК паролі қате!")
+                
+    if st.button("🚪 Жүйеден толық шығу (Логинге қайту)"):
+        st.session_state.authenticated = False
+        st.rerun()
+
 else:
     if "username" not in st.session_state:
         st.session_state.username = "Тажиддинов Ахмаджан"
@@ -239,6 +264,11 @@ else:
         st.sidebar.image(st.session_state.avatar, width=120)
         st.sidebar.markdown(f"<p style='font-size: 22px; margin-top: 5px; margin-bottom: 10px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
         
+        # Құлыптау немесе шығу батырмасы
+        if st.sidebar.button("🔒 ПК құлыптау"):
+            st.session_state.pc_unlocked = False
+            st.rerun()
+
         # --- 140 балдық нәтижелер бөлімі сайдбарда ---
         st.sidebar.markdown("---")
         st.sidebar.markdown("<p style='font-size: 18px; color: #00FF66; margin-bottom: 5px;'>🎯 <b>140 алған балдар</b></p>", unsafe_allow_html=True)
