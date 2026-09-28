@@ -5,15 +5,19 @@ from datetime import datetime
 
 st.set_page_config(page_title="Инфо-Мат УБТ Базасы", layout="centered")
 
-# Қап-қара фон және жасыл элементтерге арналған CSS стилі
+# Фонға суретті қоюға арналған CSS стилі
 st.markdown("""
     <style>
     .stApp {
-        background-color: #000000;
+        background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), 
+                          url("https://static.vecteezy.com/system/resources/previews/003/181/982/non_2x/cyber-hacker-attack-background-skull-vector.jpg");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
         color: #00FF66;
     }
     [data-testid="stSidebar"] {
-        background-color: #0b0b0b;
+        background-color: rgba(11, 11, 11, 0.95);
         padding-top: 15px;
         width: 350px !important;
     }
@@ -102,7 +106,7 @@ if "score_140_history" not in st.session_state:
         {"test_list": "Нұсқа №3", "score": 115}
     ]
 
-# ----------------- ЛОГИН ЭКРАНЫ (Тақырыпсыз және қалаған фотомен) -----------------
+# ----------------- ЛОГИН ЭКРАНЫ -----------------
 if not st.session_state.logged_in:
     st.write("")
     st.write("")
@@ -111,7 +115,6 @@ if not st.session_state.logged_in:
     with col_l2:
         st.markdown("<p style='font-size: 26px; text-align: center;'><b>Hello Ahmad</b></p>", unsafe_allow_html=True)
         
-        # Аватарды көрсету
         if isinstance(st.session_state.avatar, str):
             st.image(st.session_state.avatar, width=150)
         else:
