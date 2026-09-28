@@ -243,7 +243,7 @@ if "active_test" in st.session_state and st.session_state.active_test:
             st.rerun()
             
 else:
-    # Сайдбардағы Профиль (тек аты/сурет және шығу батырмасы қалды)
+    # Сайдбардағы Профиль және Мәзір
     st.sidebar.markdown("<p style='font-size: 32px; margin-bottom: 5px;'><b>Профиль</b></p>", unsafe_allow_html=True)
     
     st.sidebar.image(st.session_state.avatar, width=120)
@@ -295,15 +295,15 @@ else:
                     st.markdown("---")
 
     elif menu == "140 балдық статистика":
-        st.header("🎯 140 балдық жүйе бойынша нәтижелер және график")
-        st.write("Бұл жерден өз балдарыңызды қосып, өсу динамикаңызды график арқылы қадағалай аласыз.")
+        st.header("🎯 140 балдық жеке статистика және график")
+        st.write("Бұл панель басқа тесттер мен пәндерден бөлек жұмыс істейді. Өз балдарыңызды төменден енгізіп, динамиканы бақылаңыз[cite: 9].")
         
         st.markdown("---")
         
-        # Балл қосуға арналған бөлек форма панелі
+        # Балл енгізу панелі
         with st.form("add_140_score_main"):
-            st.subheader("Жаңа нәтиже енгізу")
-            test_list_input = st.text_input("Тесттер тізімі", f"Нұсқа №{len(st.session_state.score_140_history)+1}")
+            st.subheader("Жаңа нәтиже қосу")
+            test_list_input = st.text_input("Тесттер тізімі / Нұсқа атауы", f"Нұсқа №{len(st.session_state.score_140_history)+1}")
             new_score = st.number_input("Жинаған балл (макс 140)", min_value=0, max_value=140, value=100)
             submitted_score = st.form_submit_button("Баллды қосу")
             if submitted_score:
@@ -312,11 +312,13 @@ else:
                 st.rerun()
                 
         st.markdown("---")
-        st.subheader("📊 Өсу динамикасының графигі")
+        st.subheader("📊 Баллдардың өсу графигі")
         if st.session_state.score_140_history:
             df_140 = pd.DataFrame(st.session_state.score_140_history)
             chart_df = df_140.set_index("test_list")[["score"]]
             st.line_chart(chart_df)
+            
+            st.subheader("📋 Енгізілген балдар тізімі")
             st.dataframe(df_140.rename(columns={"test_list": "Тесттер тізімі", "score": "Жинаған балл"}), use_container_width=True)
         else:
             st.info("Әзірге енгізілген балдар жоқ.")
@@ -386,7 +388,7 @@ else:
     elif menu == "Менің нәтижелерім":
         st.header("Менің нәтижелерім (Пәндер бойынша прогресс/регресс)")
         if not st.session_state.results:
-            st.info("Әзірге тапсырылған тест нәтижелері жоқ. Тест тапсырып көріңіз!")
+            st.info("Әзірге қосымша ішінде тапсырылған тест нәтижелері жоқ.")
         else:
             test_subject_map = {t["title"]: t["subject"] for t in st.session_state.tests}
             
