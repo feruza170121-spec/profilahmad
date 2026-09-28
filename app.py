@@ -1,411 +1,555 @@
-import streamlit as st
-import json
-import os
-import pandas as pd
-
-# Беттің баптауы
-st.set_page_config(page_title="Жеке Тест Платформасы", page_icon="🔐", layout="centered")
-
-# --- CSS СТИЛЬДЕРІ ---
-st.markdown("""
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Жеке Инфо-Мат УБТ Базасы</title>
     <style>
-    /* Негізгі мәтіндер мен енгізу өрістерін үлкейту */
-    html, body, [class*="css"] {
-        font-size: 22px !important;
-    }
-    
-    /* Тақырыптарды үлкейту */
-    h1 { font-size: 3rem !important; }
-    h2 { font-size: 2.5rem !important; }
-    h3 { font-size: 2rem !important; }
-    
-    /* Тізімдердің шетіндегі домалақ белгілерді толық өшіру */
-    ul, ol, li {
-        list-style: none !important;
-        padding-left: 0px !important;
-    }
-    
-    div[data-baseweb="radio"] div {
-        accent-color: transparent;
-    }
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #1e1e1e;
+            --accent-color: #ff5252;
+            --text-color: #ffffff;
+            --border-color: #333;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .hidden { display: none !important; }
+
+        /* Логин экраны */
+        #login-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .login-card {
+            background-color: var(--panel-bg);
+            padding: 30px;
+            border-radius: 12px;
+            width: 350px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .login-card h2 { color: var(--accent-color); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 14px; color: #aaa; }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            background-color: #2d2d2d;
+            border: 1px solid var(--border-color);
+            color: white;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+
+        /* Негізгі интерфейс (Сайдбар + Контент) */
+        sidebar {
+            width: 280px;
+            background-color: var(--panel-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .profile-box {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .profile-avatar {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background-color: #333;
+            margin: 0 auto 10px;
+            overflow: hidden;
+            border: 2px solid var(--accent-color);
+        }
+        .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-name { font-size: 18px; font-weight: bold; }
+        
+        .nav-menu {
+            margin-top: 20px;
+            flex-grow: 1;
+        }
+        .nav-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            color: #ccc;
+            border: none;
+            text-align: left;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+        .nav-btn:hover, .nav-btn.active {
+            background-color: #2d2d2d;
+            color: var(--accent-color);
+        }
+
+        main {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        .card {
+            background-color: var(--panel-bg);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        
+        /* Пәндер тізімі */
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+        }
+        .subject-card {
+            background-color: #252525;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .subject-card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+        .subject-card h3 { margin-top: 0; color: var(--accent-color); }
+
+        /* Тест терезесі */
+        .question-box { font-size: 18px; margin-bottom: 20px; }
+        .options-list button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background-color: #2d2d2d;
+            color: white;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            text-align: left;
+            cursor: pointer;
+        }
+        .options-list button:hover { background-color: var(--accent-color); }
+        
+        /* Басқару элементтері */
+        .delete-btn {
+            background-color: #d32f2f;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 10px;
+        }
     </style>
-""", unsafe_allow_html=True)
+</head>
+<body>
 
-# --- ФАЙЛДАРДЫ БАСҚАРУ (JSON) ---
-USERS_FILE = "users.json"
-TESTS_FILE = "tests.json"
-RESULTS_FILE = "results.json"
+    <!-- ЛОГИН ЭКРАНЫ -->
+    <div id="login-screen">
+        <div class="login-card">
+            <h2>Инфо-Мат Жүйесі</h2>
+            <div class="form-group">
+                <label>Логин:</label>
+                <input type="text" id="login-user" placeholder="Логин енгізіңіз">
+            </div>
+            <div class="form-group">
+                <label>Пароль:</label>
+                <input type="password" id="login-pass" placeholder="Пароль енгізіңіз">
+            </div>
+            <button onclick="handleLogin()">Кіру</button>
+            <p id="login-error" style="color: var(--accent-color); font-size: 13px; margin-top: 10px;"></p>
+        </div>
+    </div>
 
-def init_json_files():
-    default_users = {"admin": "secret123"}
-    if os.path.exists(USERS_FILE):
-        try:
-            with open(USERS_FILE, "r", encoding="utf-8") as f:
-                users = json.load(f)
-                if not isinstance(users, dict) or "admin" not in users:
-                    users = default_users
-                    with open(USERS_FILE, "w", encoding="utf-8") as wf:
-                        json.dump(users, wf, ensure_ascii=False, indent=4)
-        except:
-            with open(USERS_FILE, "w", encoding="utf-8") as f:
-                json.dump(default_users, f, ensure_ascii=False, indent=4)
-    else:
-        with open(USERS_FILE, "w", encoding="utf-8") as f:
-            json.dump(default_users, f, ensure_ascii=False, indent=4)
-            
-    if not os.path.exists(TESTS_FILE):
-        default_tests = [
-            {
-                "id": i,
-                "test_title": "Математикадан негізгі тест",
-                "subject": "Математика",
-                "question": f"Сұрақ №{i}: 2 + {i} нәтижесі қанша?",
-                "options": [str(2+i), str(3+i), str(4+i), str(5+i)],
-                "answer": str(2+i)
-            } for i in range(1, 11)
-        ]
-        with open(TESTS_FILE, "w", encoding="utf-8") as f:
-            json.dump(default_tests, f, ensure_ascii=False, indent=4)
+    <!-- БАСҚАРУ ПАНЕЛІ (САЙДБАР) -->
+    <sidebar id="sidebar" class="hidden">
+        <div class="profile-box">
+            <div class="profile-avatar">
+                <img id="user-avatar-img" src="https://via.placeholder.com/80" alt="Avatar">
+            </div>
+            <div class="profile-name" id="user-display-name">Админ</div>
+        </div>
+        <div class="nav-menu">
+            <button class="nav-btn active" onclick="switchTab('subjects')">📚 Тесттер тізімі</button>
+            <button class="nav-btn" onclick="switchTab('creator')">➕ Сұрақ / Тест қосу</button>
+            <button class="nav-btn" onclick="switchTab('results')">📊 Менің нәтижелерім</button>
+            <button class="nav-btn" onclick="switchTab('profile')">⚙️ Профильді баптау</button>
+        </div>
+        <button class="nav-btn" style="color: var(--accent-color);" onclick="logout()">Шығу</button>
+    </sidebar>
 
-    if not os.path.exists(RESULTS_FILE):
-        with open(RESULTS_FILE, "w", encoding="utf-8") as f:
-            json.dump([], f, ensure_ascii=False, indent=4)
-
-init_json_files()
-
-def load_data(file_path):
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return []
-
-def save_data(file_path, data):
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-if "username" not in st.session_state:
-    st.session_state.username = ""
-if "test_started" not in st.session_state:
-    st.session_state.test_started = False
-if "selected_test_title" not in st.session_state:
-    st.session_state.selected_test_title = None
-if "test_finished" not in st.session_state:
-    st.session_state.test_finished = False
-if "last_result" not in st.session_state:
-    st.session_state.last_result = None
-if "current_question_index" not in st.session_state:
-    st.session_state.current_question_index = 0
-if "user_answers" not in st.session_state:
-    st.session_state.user_answers = {}
-
-# --- КІРУ ПАРАҒЫ ---
-def login_page():
-    st.title("🔐 Жеке Кабинетке Кіру")
-    users = load_data(USERS_FILE)
-    
-    if not isinstance(users, dict):
-        users = {"admin": "secret123"}
-        save_data(USERS_FILE, users)
-
-    with st.form("login_form"):
-        username = st.text_input("Логин")
-        password = st.text_input("Пароль", type="password")
-        submitted = st.form_submit_button("Кіру")
+    <!-- НЕГІЗГІ МАЗМҰН -->
+    <main id="main-content" class="hidden">
         
-        if submitted:
-            if username in users and users[username] == password:
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.success("Сәтті кірдіңіз!")
-                st.rerun()
-            else:
-                st.error("Қате логин немесе пароль!")
+        <!-- 1. ПӘНДЕР МЕН ТЕСТТЕР -->
+        <div id="tab-subjects" class="tab-content">
+            <h2>Инфо-Мат Бағыты (Әр тест 50 сұраққа дейін)</h2>
+            <div class="subject-grid" id="subjects-container">
+                <!-- Динамикалық түрде енгізілген тесттер осында түседі -->
+            </div>
+        </div>
 
-# --- НЕГІЗГІ ҚОСЫМША ---
-def main_app():
-    st.sidebar.title(f"Қош келдіңіз, {st.session_state.username}!")
-    menu = st.sidebar.radio("Мәзір", ["Тесттер", "Сұрақ қосу / Өзгерту", "Нәтижелер", "Логин/Парольді өзгерту"])
-    
-    if st.sidebar.button("Жүйеден шығу"):
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        st.session_state.test_started = False
-        st.session_state.selected_test_title = None
-        st.session_state.test_finished = False
-        st.session_state.user_answers = {}
-        st.rerun()
-        
-    tests = load_data(TESTS_FILE)
-    
-    # 1. ТЕСТТЕР БӨЛІМІ
-    if menu == "Тесттер":
-        
-        # СЕРТИФИКАТ БӨЛІМІ
-        if st.session_state.test_finished:
-            res = st.session_state.last_result
-            
-            st.markdown("---")
-            st.markdown("<h1 style='text-align: center; color: #4CAF50;'>🏆 СЕРТИФИКАТ 🏆</h1>", unsafe_allow_html=True)
-            st.markdown(f"<p style='text-align: center; font-size: 24px;'>Осы сертификат беріледі: <b>{res['user']}</b></p>", unsafe_allow_html=True)
-            st.markdown(f"<p style='text-align: center; font-size: 20px;'><b>'{res['test_title']}'</b> атты тестті сәтті аяқтағаны үшін.</p>", unsafe_allow_html=True)
-            st.markdown(f"<h2 style='text-align: center; color: #2196F3;'>Жинаған ұпайыңыз: {res['score_str']}</h2>", unsafe_allow_html=True)
-            st.markdown("---")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("🔄 Басқа тест таңдау"):
-                    st.session_state.test_finished = False
-                    st.session_state.test_started = False
-                    st.session_state.selected_test_title = None
-                    st.session_state.user_answers = {}
-                    st.rerun()
-            with col2:
-                if st.button("🚪 Қайта кіру / Шығу"):
-                    st.session_state.logged_in = False
-                    st.session_state.username = ""
-                    st.session_state.test_finished = False
-                    st.session_state.test_started = False
-                    st.session_state.user_answers = {}
-                    st.rerun()
-            return
+        <!-- 2. СҰРАҚ ЖӘНЕ ТЕСТ ҚОСУ (АДМИН) -->
+        <div id="tab-creator" class="tab-content hidden">
+            <h2>Жаңа Тест немесе Сұрақ қосу</h2>
+            <div class="card">
+                <div class="form-group">
+                    <label>Бөлімді таңдаңыз:</label>
+                    <select id="new-subject">
+                        <option value="Математика тарихы">Математика тарихы</option>
+                        <option value="Математикалық сауаттылық">Математикалық сауаттылық</option>
+                        <option value="Математика">Математика</option>
+                        <option value="Информатика">Информатика</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Тест атауы:</label>
+                    <input type="text" id="new-test-title" placeholder="Мысалы: №1 Тест немесе Логика негіздері">
+                </div>
+                <div class="form-group">
+                    <label>Сұрақ мәтіні:</label>
+                    <textarea id="new-question" rows="3" placeholder="Сұрақты жазыңыз..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>1-ші жауап нұсқасы:</label>
+                    <input type="text" id="opt-0">
+                </div>
+                <div class="form-group">
+                    <label>2-ші жауап нұсқасы:</label>
+                    <input type="text" id="opt-1">
+                </div>
+                <div class="form-group">
+                    <label>3-ші жауап нұсқасы:</label>
+                    <input type="text" id="opt-2">
+                </div>
+                <div class="form-group">
+                    <label>4-ші жауап нұсқасы:</label>
+                    <input type="text" id="opt-3">
+                </div>
+                <div class="form-group">
+                    <label>Дұрыс жауапты белгілеңіз:</label>
+                    <select id="correct-opt">
+                        <option value="0">1-ші нұсқа дұрыс</option>
+                        <option value="1">2-ші нұсқа дұрыс</option>
+                        <option value="2">3-ші нұсқа дұрыс</option>
+                        <option value="3">4-ші нұсқа дұрыс</option>
+                    </select>
+                </div>
+                <button onclick="saveQuestionToTest()">Сұрақты сақтау / Қосу</button>
+            </div>
+        </div>
 
-        st.title("📝 Тесттер тізімі және тапсыру")
-        
-        if not tests:
-            st.warning("Әзірге жасақталған тесттер жоқ.")
-            return
-            
-        test_titles = sorted(list(set(q.get("test_title", "Атаусыз тест").strip() for q in tests if q.get("test_title"))))
-        
-        if not test_titles:
-            st.warning("Базада тест атаулары табылмады.")
-            return
+        <!-- 3. НӘТИЖЕЛЕР -->
+        <div id="tab-results" class="tab-content hidden">
+            <h2>Менің нәтижелерім</h2>
+            <div class="card" id="results-list">
+                <p>Әзірге тапсырылған тесттер жоқ.</p>
+            </div>
+        </div>
 
-        if not st.session_state.test_started:
-            st.subheader("Тапсыру үшін тест атауын таңдаңыз:")
-            selected_title = st.selectbox("Тест атауы:", test_titles, key="test_title_select")
-            
-            selected_tests_preview = [q for q in tests if q.get("test_title") == selected_title]
-            st.info(f"Бұл тестте барлығы {len(selected_tests_preview)} сұрақ бар.")
-            
-            if st.button("Тестті бастау"):
-                st.session_state.test_started = True
-                st.session_state.selected_test_title = selected_title
-                st.session_state.current_question_index = 0
-                st.session_state.user_answers = {}
-                st.rerun()
-        else:
-            current_title = st.session_state.selected_test_title
-            current_test_questions = [q for q in tests if q.get("test_title") == current_title]
-            
-            if not current_test_questions:
-                st.warning(f"'{current_title}' бойынша сұрақтар табылмады.")
-                if st.button("Тесттер тізіміне оралу"):
-                    st.session_state.test_started = False
-                    st.rerun()
-                return
+        <!-- 4. ПРОФИЛЬДІ БАПТАУ -->
+        <div id="tab-profile" class="tab-content hidden">
+            <h2>Профильді өңдеу</h2>
+            <div class="card">
+                <div class="form-group">
+                    <label>Сіздің атауыңыз (Никнейм):</label>
+                    <input type="text" id="profile-name-input" value="Админ">
+                </div>
+                <div class="form-group">
+                    <label>Аватар сурет сілтемесі (URL):</label>
+                    <input type="text" id="profile-avatar-input" placeholder="Сурет сілтемесін жабыстырыңыз">
+                </div>
+                <button onclick="updateProfile()">Сақтау</button>
+            </div>
+        </div>
 
-            st.subheader(f"📚 Тест атауы: {current_title}")
+        <!-- 5. ТЕСТТІ ӨТҮ (Динамикалық) -->
+        <div id="tab-active-test" class="tab-content hidden">
+            <button onclick="switchTab('subjects')" style="width: auto; padding: 5px 15px; margin-bottom: 15px;">← Артқа қайту</button>
+            <div class="card">
+                <h3 id="active-test-title">Тест атауы</h3>
+                <div id="quiz-container-box">
+                    <div class="question-box" id="active-q-text">Сұрақ...</div>
+                    <div class="options-list" id="active-options"></div>
+                </div>
+            </div>
+        </div>
 
-            # --- СҰРАҚТАР НӨМІРЛЕРІ ПАНЕЛІ ---
-            st.write("Сұрақтар арасында өту үшін төмендегі батырмаларды басыңыз:")
-            cols = st.columns(min(len(current_test_questions), 10))
-            for idx, q_item in enumerate(current_test_questions):
-                col_idx = idx % 10
-                with cols[col_idx]:
-                    btn_label = f"{idx + 1}"
-                    if st.button(btn_label, key=f"q_btn_{idx}"):
-                        st.session_state.current_question_index = idx
-                        st.rerun()
-            st.write("---")
+    </main>
 
-            # Ағымдағы сұрақ
-            idx = st.session_state.current_question_index
-            q = current_test_questions[idx]
-            
-            st.markdown(f"**Сұрақ {idx + 1} / {len(current_test_questions)}:**")
-            st.markdown(f"### {q['question']}")
-            
-            options = q['options']
-            current_ans = st.session_state.user_answers.get(q['id'])
-            
-            default_ix = 0
-            if current_ans in options:
-                default_ix = options.index(current_ans)
-                
-            selected_option = st.radio("Жауапты таңдаңыз:", options, index=default_ix, key=f"radio_q_{q['id']}")
-            st.session_state.user_answers[q['id']] = selected_option
-            
-            st.write("---")
-            
-            # Батырмалар
-            c_prev, c_next, c_finish = st.columns([1, 1, 2])
-            
-            with c_prev:
-                if idx > 0:
-                    if st.button("⬅️ Артқа"):
-                        st.session_state.current_question_index -= 1
-                        st.rerun()
-            with c_next:
-                if idx < len(current_test_questions) - 1:
-                    if st.button("Келесі ➡️"):
-                        st.session_state.current_question_index += 1
-                        st.rerun()
-            with c_finish:
-                if st.button("🏁 Тестті аяқтау және Сертификат алу"):
-                    score = 0
-                    for item in current_test_questions:
-                        if st.session_state.user_answers.get(item['id']) == item['answer']:
-                            score += 1
-                    
-                    result_str = f"{score} / {len(current_test_questions)}"
-                    res_data = {
-                        "user": st.session_state.username,
-                        "test_title": current_title,
-                        "score": score,
-                        "total": len(current_test_questions),
-                        "score_str": result_str
-                    }
-                    
-                    results = load_data(RESULTS_FILE)
-                    results.append(res_data)
-                    save_data(RESULTS_FILE, results)
-                    
-                    st.session_state.last_result = res_data
-                    st.session_state.test_finished = True
-                    st.rerun()
-            
-            if st.button("Басқа тест таңдауға қайту"):
-                st.session_state.test_started = False
-                st.session_state.user_answers = {}
-                st.rerun()
+    <script>
+        // Деректерді сақтау (localStorage арқылы браузерде сақталады)
+        let appData = JSON.parse(localStorage.getItem('infomat_data')) || {
+            username: "MyProfile",
+            avatar: "https://via.placeholder.com/80",
+            tests: [
+                {
+                    id: 1,
+                    subject: "Математика тарихы",
+                    title: "Математика тарихы: Бастапқы кезең (50 сұраққа дейін)",
+                    questions: [
+                        {
+                            question: "Пифагор теоремасы қай халыққа ерте заманнан белгілі болған?",
+                            options: ["Вавилон және Қытай", "Тек Грекия", "Рим империясы", "Мысыр ғана"],
+                            correct: 0
+                        }
+                    ]
+                },
+                {
+                    id: 2,
+                    subject: "Математикалық сауаттылық",
+                    title: "Логикалық есептер мен сандар тізбегі",
+                    questions: [
+                        {
+                            question: "2, 4, 8, 16, ? келесі санды тап",
+                            options: ["20", "24", "32", "64"],
+                            correct: 2
+                        }
+                    ]
+                },
+                {
+                    id: 3,
+                    subject: "Математика",
+                    title: "Алгебра және геометрия негіздері",
+                    questions: [
+                        {
+                            question: "sin²(x) + cos²(x) неге тең?",
+                            options: ["0", "1", "2", "-1"],
+                            correct: 1
+                        }
+                    ]
+                },
+                {
+                    id: 4,
+                    subject: "Информатика",
+                    title: "Python және Алгоритмдер",
+                    questions: [
+                        {
+                            question: "Python тілінде цикл ашу операторы:",
+                            options: ["loop", "for / while", "repeat", "if / else"],
+                            correct: 1
+                        }
+                    ]
+                }
+            ],
+            results: []
+        };
 
-    # 2. СҰРАҚ ҚОСУ ЖӘНЕ ӨШІРУ
-    elif menu == "Сұрақ қосу / Өзгерту":
-        st.title("➕ Тест құрастыру және сұрақтарды басқару")
-        
-        if "delete_q_id" in st.session_state:
-            q_id_to_del = st.session_state.delete_q_id
-            updated_tests = [q for q in tests if q["id"] != q_id_to_del]
-            save_data(TESTS_FILE, updated_tests)
-            del st.session_state.delete_q_id
-            st.success("Сұрақ сәтті өшірілді!")
-            st.rerun()
+        const correctUser = "admin";
+        const correctPass = "12345"; // Өз қалауыңызша өзгерте аласыз
 
-        tab1, tab2 = st.tabs(["Қолданыстағы сұрақтар", "Жаңа сұрақ қосу"])
-        
-        with tab1:
-            st.subheader("Барлық сұрақтар мен тесттер тізімі")
-            if not tests:
-                st.info("Әзірге сұрақтар жоқ.")
-            else:
-                for q in tests:
-                    t_title = q.get('test_title', 'Атаусыз тест')
-                    with st.expander(f"[{t_title}] ID: {q['id']} - {q['question'][:40]}..."):
-                        st.markdown(f"**Тест атауы:** {t_title}")
-                        st.markdown(f"**Пән:** {q.get('subject', 'Көрсетілмеген')}")
-                        st.markdown(f"**Сұрақ:** {q['question']}")
-                        st.markdown(f"**Нұсқалар:** {q['options']}")
-                        st.markdown(f"**Дұрыс жауап:** {q['answer']}")
-                        
-                        if st.button("Сұрақты өшіру", key=f"del_{q['id']}"):
-                            st.session_state.delete_q_id = q['id']
-                            st.rerun()
+        function handleLogin() {
+            let u = document.getElementById("login-user").value;
+            let p = document.getElementById("login-pass").value;
+            if(u === correctUser && p === correctPass) {
+                document.getElementById("login-screen").classList.add("hidden");
+                document.getElementById("sidebar").classList.remove("hidden");
+                document.getElementById("main-content").classList.remove("hidden");
+                renderUI();
+            } else {
+                document.getElementById("login-error").innerText = "Қате логин немесе пароль!";
+            }
+        }
 
-        with tab2:
-            st.subheader("Жаңа сұрақ қосу (Әр тестке макс. 50 сұрақ)")
+        function logout() {
+            document.getElementById("login-screen").classList.remove("hidden");
+            document.getElementById("sidebar").classList.add("hidden");
+            document.getElementById("main-content").classList.add("hidden");
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
             
-            with st.form("add_question_form"):
-                st.markdown("### Тесттің атауы")
-                test_title_input = st.text_input("Тест атауын енгізіңіз:", value="")
-                subject_input = st.selectbox("Пәні:", ["Математика", "Информатика", "Физика", "Тарих", "Ағылшын тілі", "Басқа"])
-                
-                new_q = st.text_area("Сұрақ мәтіні")
-                c1 = st.text_input("Нұсқа A")
-                c2 = st.text_input("Нұсқа B")
-                c3 = st.text_input("Нұсқа C")
-                c4 = st.text_input("Нұсқа D")
-                
-                correct_ans_letter = st.selectbox("Дұрыс жауаптың әрпін таңдаңыз:", ["A", "B", "C", "D"])
-                add_submitted = st.form_submit_button("Сұрақты сақтау")
-                
-                if add_submitted:
-                    final_test_title = test_title_input.strip() if test_title_input.strip() else "Атаусыз тест"
-                    current_count_in_test = len([q for q in tests if q.get("test_title") == final_test_title])
-                    
-                    if current_count_in_test >= 50:
-                        st.error(f"❌ Кешіріңіз, '{final_test_title}' тест атауында сұрақтар саны максималды шектеуге жетті!")
-                    else:
-                        if final_test_title and new_q and c1 and c2:
-                            options_dict = {"A": c1, "B": c2, "C": c3, "D": c4}
-                            selected_correct_text = options_dict.get(correct_ans_letter)
-                            
-                            if not selected_correct_text:
-                                st.error("Таңдалған әріпке сәйкес келетін нұсқа бос болмауы тиіс!")
-                            else:
-                                new_id = max([q["id"] for q in tests], default=0) + 1
-                                new_question_data = {
-                                    "id": new_id,
-                                    "test_title": final_test_title,
-                                    "subject": subject_input,
-                                    "question": new_q.strip(),
-                                    "options": [c1, c2, c3, c4],
-                                    "answer": selected_correct_text
-                                }
-                                tests.append(new_question_data)
-                                save_data(TESTS_FILE, tests)
-                                st.success("Сәтті қосылды!")
-                        else:
-                            st.error("Барлық міндетті өрістерді толтырыңыз!")
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            if(tabId === 'subjects') renderSubjects();
+            if(tabId === 'results') renderResults();
+        }
 
-    # 3. НӘТИЖЕЛЕР (Тек қолданушы тапсырған тесттер тізімі)
-    elif menu == "Нәтижелер":
-        st.title("📊 Пайдаланушылардың тест нәтижелері")
-        
-        results = load_data(RESULTS_FILE)
-        if results:
-            df = pd.DataFrame(results)
-            st.dataframe(df)
-            
-            if st.button("Барлық нәтижелерді тазарту"):
-                save_data(RESULTS_FILE, [])
-                st.rerun()
-        else:
-            st.info("Әзірге сақталған нәтижелер жоқ. Тест тапсырғаннан кейін мұнда нәтижелеріңіз шығады.")
+        function renderUI() {
+            document.getElementById("user-display-name").innerText = appData.username;
+            document.getElementById("user-avatar-img").src = appData.avatar;
+            document.getElementById("profile-name-input").value = appData.username;
+            document.getElementById("profile-avatar-input").value = appData.avatar;
+            renderSubjects();
+        }
 
-    # 4. ЛОГИН ЖӘНЕ ПАРОЛЬДІ ӨЗГЕРТУ
-    elif menu == "Логин/Парольді өзгерту":
-        st.title("⚙️ Жеке деректерді өзгерту")
-        users = load_data(USERS_FILE)
-        current_user = st.session_state.username
-        
-        with st.form("change_credentials_form"):
-            new_username = st.text_input("Жаңа логин", value=current_user)
-            old_password = st.text_input("Қазіргі пароль", type="password")
-            new_password = st.text_input("Жаңа пароль", type="password")
-            
-            update_submitted = st.form_submit_button("Өзгерістерді сақтау")
-            
-            if update_submitted:
-                if users.get(current_user) == old_password:
-                    if new_username.strip() and new_password.strip():
-                        del users[current_user]
-                        users[new_username] = new_password
-                        save_data(USERS_FILE, users)
-                        
-                        st.session_state.username = new_username
-                        st.success("Логин мен пароль сәтті өзгертілді! Қайта кіріңіз.")
-                        st.session_state.logged_in = False
-                        st.rerun()
-                    else:
-                        st.warning("Өрістер бос болмауы тиіс.")
-                else:
-                    st.error("Қазіргі пароль қате енгізілді!")
+        function updateProfile() {
+            appData.username = document.getElementById("profile-name-input").value;
+            appData.avatar = document.getElementById("profile-avatar-input").value;
+            localStorage.setItem('infomat_data', JSON.stringify(appData));
+            renderUI();
+            alert("Профиль сәтті жаңартылды!");
+        }
 
-if not st.session_state.logged_in:
-    login_page()
-else:
-    main_app()
+        function renderSubjects() {
+            let container = document.getElementById("subjects-container");
+            container.innerHTML = "";
+            
+            appData.tests.forEach((test, index) => {
+                let div = document.createElement("div");
+                div.className = "subject-card";
+                div.innerHTML = `
+                    <span style="font-size: 12px; color: var(--accent-color);">${test.subject}</span>
+                    <h3>${test.title}</h3>
+                    <p style="font-size: 13px; color: #aaa;">Сұрақ саны: ${test.questions.length} / 50</p>
+                    <button onclick="startTest(${test.id})" style="padding: 6px; font-size: 13px;">Тестті бастау</button>
+                    <button class="delete-btn" onclick="deleteTest(${test.id})">Тестті өшіру</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteTest(id) {
+            if(confirm("Бұл тестті шынымен өшіргіңіз келе ме?")) {
+                appData.tests = appData.tests.filter(t => t.id !== id);
+                localStorage.setItem('infomat_data', JSON.stringify(appData));
+                renderSubjects();
+            }
+        }
+
+        function saveQuestionToTest() {
+            let subject = document.getElementById("new-subject").value;
+            let title = document.getElementById("new-test-title").value;
+            let qText = document.getElementById("new-question").value;
+            let opts = [
+                document.getElementById("opt-0").value,
+                document.getElementById("opt-1").value,
+                document.getElementById("opt-2").value,
+                document.getElementById("opt-3").value
+            ];
+            let correct = parseInt(document.getElementById("correct-opt").value);
+
+            if(!title || !qText || opts.some(o => !o)) {
+                alert("Барлық өрістерді толтырыңыз!");
+                return;
+            }
+
+            let existingTest = appData.tests.find(t => t.title === title && t.subject === subject);
+            let newQ = { question: qText, options: opts, correct: correct };
+
+            if(existingTest) {
+                if(existingTest.questions.length >= 50) {
+                    alert("Бұл тестте 50 сұрақ толып қалды!");
+                    return;
+                }
+                existingTest.questions.push(newQ);
+            } else {
+                let newTest = {
+                    id: Date.now(),
+                    subject: subject,
+                    title: title,
+                    questions: [newQ]
+                };
+                appData.tests.push(newTest);
+            }
+
+            localStorage.setItem('infomat_data', JSON.stringify(appData));
+            alert("Сұрақ сәтті қосылды!");
+            switchTab('subjects');
+        }
+
+        // Тест тапсыру логикасы
+        let currentActiveTest = null;
+        let currentQIndex = 0;
+        let currentScore = 0;
+
+        function startTest(id) {
+            currentActiveTest = appData.tests.find(t => t.id === id);
+            if(!currentActiveTest || currentActiveTest.questions.length === 0) {
+                alert("Бұл тестте әзірге сұрақтар жоқ!");
+                return;
+            }
+            currentQIndex = 0;
+            currentScore = 0;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-active-test').classList.remove('hidden');
+            document.getElementById('active-test-title').innerText = currentActiveTest.title;
+            loadActiveQuestion();
+        }
+
+        function loadActiveQuestion() {
+            let q = currentActiveTest.questions[currentQIndex];
+            document.getElementById('active-q-text').innerText = `${currentQIndex + 1}. ${q.question}`;
+            let optBox = document.getElementById('active-options');
+            optBox.innerHTML = "";
+
+            q.options.forEach((opt, idx) => {
+                let btn = document.createElement("button");
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(idx, q.correct);
+                optBox.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, correct) {
+            if(selected === correct) currentScore++;
+            currentQIndex++;
+
+            if(currentQIndex < currentActiveTest.questions.length) {
+                loadActiveQuestion();
+            } else {
+                alert(`Тест аяқталды! Ұпайыңыз: ${currentScore} / ${currentActiveTest.questions.length}`);
+                appData.results.push({
+                    title: currentActiveTest.title,
+                    score: currentScore,
+                    total: currentActiveTest.questions.length,
+                    date: new Date().toLocaleDateString()
+                });
+                localStorage.setItem('infomat_data', JSON.stringify(appData));
+                switchTab('subjects');
+            }
+        }
+
+        function renderResults() {
+            let resBox = document.getElementById('results-list');
+            if(appData.results.length === 0) {
+                resBox.innerHTML = "<p>Әзірге нәтижелер жоқ.</p>";
+                return;
+            }
+            resBox.innerHTML = appData.results.map(r => `
+                <div style="border-bottom: 1px solid #333; padding: 10px 0;">
+                    <strong>${r.title}</strong><br>
+                    Нәтиже: ${r.score} / ${r.total} (${r.date})
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
