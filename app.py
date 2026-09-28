@@ -6,15 +6,15 @@ import pandas as pd
 # Беттің баптауы
 st.set_page_config(page_title="Жеке Тест Платформасы", page_icon="🔐", layout="centered")
 
-# --- CSS СТИЛЬДЕРІ: Жазуларды тағы да үлкейту және домалақтарды өшіру ---
+# --- CSS СТИЛЬДЕРІ: Радио батырмалардың домалақтарын жасыру / кішірейту ---
 st.markdown("""
     <style>
-    /* Негізгі мәтіндер мен енгізу өрістерін едәуір үлкейту */
+    /* Негізгі мәтіндер мен енгізу өрістерін үлкейту */
     html, body, [class*="css"] {
         font-size: 22px !important;
     }
     
-    /* Тақырыптарды тағы да үлкейту */
+    /* Тақырыптарды үлкейту */
     h1 {
         font-size: 3rem !important;
     }
@@ -25,15 +25,16 @@ st.markdown("""
         font-size: 2rem !important;
     }
     
-    /* Тізімдердің шетіндегі домалақ белгілерді (bullet points) толық өшіру */
-    ul, ol {
-        list-style-type: none !important;
+    /* Тізімдердің шетіндегі домалақ белгілерді толық өшіру */
+    ul, ol, li {
+        list-style: none !important;
         padding-left: 0px !important;
     }
     
-    li {
-        list-style: none !important;
-        margin-bottom: 8px;
+    /* st.radio (нұсқалардың қасындағы) домалақтарды жасыруға немесе кішірейтуге арналған стиль */
+    div[data-baseweb="radio"] div {
+        /* Домалақтың көрінуін азайту немесе алып тастау */
+        accent-color: transparent;
     }
     </style>
 """, unsafe_allow_html=True)
