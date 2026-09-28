@@ -86,11 +86,18 @@ if "tests" not in st.session_state:
                     "question": "Көне түркі жазба ескерткіштерінің ішіндегі ең ірісі:",
                     "options": ["Күлтегін", "Тоныкөк", "Билге қаған", "Махмұт Қашғари"],
                     "correct": 0
-                },
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "subject": "Математика",
+            "title": "Математика: Бастапқы формулалар мен теңдеулер",
+            "questions": [
                 {
-                    "question": "Қарлұқ қағанаты өмір сүрген жылдар:",
-                    "options": ["704–940 жж.", "552–603 жж.", "942–1212 жж.", "1465–1847 жж."],
-                    "correct": 0
+                    "question": "Егер 2x + 4 = 12 болса, x мәнін табыңыз:",
+                    "options": ["2", "4", "6", "8"],
+                    "correct": 1
                 }
             ]
         }
@@ -99,8 +106,13 @@ if "tests" not in st.session_state:
 if "results" not in st.session_state:
     st.session_state.results = []
 
+# 140 балдық Жалпы статистика
 if "score_140_history" not in st.session_state:
     st.session_state.score_140_history = []
+
+# Математика пәніне арналған жеке 140 балдық статистика
+if "math_score_history" not in st.session_state:
+    st.session_state.math_score_history = []
 
 # ----------------- ЛОГИН ЭКРАНЫ -----------------
 if not st.session_state.logged_in:
@@ -252,7 +264,7 @@ else:
     st.sidebar.markdown("---")
     st.sidebar.markdown("<p style='font-size: 18px; margin-bottom: 10px;'><b>Мәзір</b></p>", unsafe_allow_html=True)
 
-    pages = ["Тесттер тізімі", "140 балдық статистика", "Сұрақ қосу", "Деректерді басқару (JSON)", "Менің нәтижелерім", "Профиль"]
+    pages = ["Тесттер тізімі", "140 балдық статистика", "Математика (Статистика & График)", "Сұрақ қосу", "Деректерді басқару (JSON)", "Менің нәтижелерім", "Профиль"]
     for p in pages:
         if st.sidebar.button(p, key=f"btn_{p}", use_container_width=True):
             st.session_state.current_page = p
@@ -292,11 +304,10 @@ else:
 
     elif menu == "140 балдық статистика":
         st.header("🎯 140 балдық жеке статистика және график")
-        st.write("Бұл жерде башында барлық мәлімет 0 болып тұрады. Төменден өз нәтижелеріңізді қосып, қажетсіздерін өшіре аласыз.")
+        st.write("Бұл жерде басында барлық мәлімет 0 болып тұрады. Төменден өз нәтижелеріңізді қосып, қажетсіздерін өшіре аласыз.")
         
         st.markdown("---")
         
-        # Балл енгізу панелі
         with st.form("add_140_score_main"):
             st.subheader("Жаңа нәтиже қосу")
             test_list_input = st.text_input("Тесттер тізімі / Нұсқа атауы", f"Нұсқа №{len(st.session_state.score_140_history)+1}")
@@ -316,8 +327,6 @@ else:
             st.line_chart(chart_df)
             
             st.subheader("📋 Енгізілген балдар тізімі (Жою мүмкіндігімен)")
-            
-            # Кестедегі әрбір элементті жоюға арналған интерфейс
             for idx, item in enumerate(st.session_state.score_140_history):
                 col_info, col_del = st.columns([4, 1])
                 with col_info:
@@ -329,13 +338,50 @@ else:
                 st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
         else:
             st.info("Әзірге балдар енгізілмеді (График 0 де тұр). Жоғарыдан өз нәтижеңізді енгізіңіз!")
+
+    elif menu == "Математика (Статистика & График)":
+        st.header("📐 Математика пәні бойынша 140 балдық статистика және график")
+        st.write("Бұл бетте басынан 0 болып тұратын Математика пәнінің жеке нәтижелерін енгізіп, өшіріп, графигін көре аласыз.")
+        
+        st.markdown("---")
+        
+        with st.form("add_math_score_form"):
+            st.subheader("Математикадан жаңа нәтиже қосу")
+            math_test_input = st.text_input("Математика нұсқасы / Тест атауы", f"Математика Нұсқа №{len(st.session_state.math_score_history)+1}")
+            math_new_score = st.number_input("Математикадан жинаған балл (макс 140)", min_value=0, max_value=140, value=0)
+            submitted_math_score = st.form_submit_button("Математика баллын қосу")
+            if submitted_math_score:
+                st.session_state.math_score_history.append({"test_list": math_test_input, "score": math_new_score})
+                st.success("Математика баллы сәтті қосылды!")
+                st.rerun()
+                
+        st.markdown("---")
+        st.subheader("📊 Математика баллдарының өсу графигі")
+        
+        if st.session_state.math_score_history:
+            df_math = pd.DataFrame(st.session_state.math_score_history)
+            math_chart_df = df_math.set_index("test_list")[["score"]]
+            st.line_chart(math_chart_df)
+            
+            st.subheader("📋 Математика балдарының тізімі (Жою мүмкіндігімен)")
+            for idx, item in enumerate(st.session_state.math_score_history):
+                col_info, col_del = st.columns([4, 1])
+                with col_info:
+                    st.write(f"🔹 **{item['test_list']}** — Математика балы: **{item['score']}**")
+                with col_del:
+                    if st.button("🗑️ Өшіру", key=f"del_math_{idx}"):
+                        st.session_state.math_score_history.pop(idx)
+                        st.rerun()
+                st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
+        else:
+            st.info("Математикадан әзірге балдар енгізілмеді (График 0 де тұр).")
                 
     elif menu == "Сұрақ қосу":
         st.header("Жаңа сұрақ немесе кезеңдік тест қосу")
         
         with st.form("add_question_form"):
             subject = st.selectbox("Бөлімді таңдаңыз", ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"])
-            test_title = st.text_input("Тест атауы (Кезеңі)", "Мысалы: Қазақстан тарихы: Жаңа заман")
+            test_title = st.text_input("Тест атауы (Кезеңі)", "Мысалы: Математика: Тригонометрия")
             q_text = st.text_area("Сұрақ мәтіні")
             opt0 = st.text_input("1-ші жауап")
             opt1 = st.text_input("2-ші жауап")
