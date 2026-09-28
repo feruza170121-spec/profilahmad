@@ -6,32 +6,31 @@ import pandas as pd
 # Беттің баптауы
 st.set_page_config(page_title="Жеке Тест Платформасы", page_icon="🔐", layout="centered")
 
-# --- CSS СТИЛЬДЕРІ: Жазуларды үлкейту және шеткі домалақтарды өшіру ---
+# --- CSS СТИЛЬДЕРІ: Жазуларды тағы да үлкейту және домалақтарды өшіру ---
 st.markdown("""
     <style>
-    /* Барлық негізгі мәтіндер мен енгізу өрістерін үлкейту */
+    /* Негізгі мәтіндер мен енгізу өрістерін едәуір үлкейту */
     html, body, [class*="css"] {
-        font-size: 18px !important;
+        font-size: 22px !important;
     }
     
-    /* Тақырыптарды үлкейту */
+    /* Тақырыптарды тағы да үлкейту */
     h1 {
-        font-size: 2.5rem !important;
+        font-size: 3rem !important;
     }
     h2 {
-        font-size: 2rem !important;
+        font-size: 2.5rem !important;
     }
     h3 {
-        font-size: 1.5rem !important;
+        font-size: 2rem !important;
     }
     
-    /* Тізімдердің шетіндегі домалақ белгілерді (bullet points) өшіру */
+    /* Тізімдердің шетіндегі домалақ белгілерді (bullet points) толық өшіру */
     ul, ol {
         list-style-type: none !important;
         padding-left: 0px !important;
     }
     
-    /* Markdown ішіндегі тізімдерді тазарту */
     li {
         list-style: none !important;
         margin-bottom: 8px;
