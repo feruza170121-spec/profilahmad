@@ -2,11 +2,12 @@ import streamlit as st
 import json
 import os
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Беттің баптауы
 st.set_page_config(page_title="Жеке Тест Платформасы", page_icon="🔐", layout="centered")
 
-# --- CSS СТИЛЬДЕРІ: Радио батырмалардың домалақтарын жасыру / кішірейту ---
+# --- CSS СТИЛЬДЕРІ ---
 st.markdown("""
     <style>
     /* Негізгі мәтіндер мен енгізу өрістерін үлкейту */
@@ -15,15 +16,9 @@ st.markdown("""
     }
     
     /* Тақырыптарды үлкейту */
-    h1 {
-        font-size: 3rem !important;
-    }
-    h2 {
-        font-size: 2.5rem !important;
-    }
-    h3 {
-        font-size: 2rem !important;
-    }
+    h1 { font-size: 3rem !important; }
+    h2 { font-size: 2.5rem !important; }
+    h3 { font-size: 2rem !important; }
     
     /* Тізімдердің шетіндегі домалақ белгілерді толық өшіру */
     ul, ol, li {
@@ -31,9 +26,7 @@ st.markdown("""
         padding-left: 0px !important;
     }
     
-    /* st.radio (нұсқалардың қасындағы) домалақтарды жасыруға немесе кішірейтуге арналған стиль */
     div[data-baseweb="radio"] div {
-        /* Домалақтың көрінуін азайту немесе алып тастау */
         accent-color: transparent;
     }
     </style>
@@ -44,7 +37,6 @@ USERS_FILE = "users.json"
 TESTS_FILE = "tests.json"
 RESULTS_FILE = "results.json"
 
-# Бастапқы файлдарды құру және әрқашан дұрыс логин-парольді қамтамасыз ету
 def init_json_files():
     default_users = {"admin": "secret123"}
     if os.path.exists(USERS_FILE):
@@ -65,21 +57,13 @@ def init_json_files():
     if not os.path.exists(TESTS_FILE):
         default_tests = [
             {
-                "id": 1,
+                "id": i,
                 "test_title": "Математикадан негізгі тест",
                 "subject": "Математика",
-                "question": "2 + 2 * 2 нәтижесі қанша?",
-                "options": ["6", "8", "4", "2"],
-                "answer": "6"
-            },
-            {
-                "id": 2,
-                "test_title": "Python негіздері",
-                "subject": "Информатика",
-                "question": "Python тілінде тізім (list) қандай жақшамен анықталады?",
-                "options": ["{}", "[]", "()", "<>"],
-                "answer": "[]"
-            }
+                "question": f"Сұрақ №{i}: 2 + {i} нәтижесі қанша?",
+                "options": [str(2+i), str(3+i), str(4+i), str(5+i)],
+                "answer": str(2+i)
+            } for i in range(1, 11) # Тест сынағы үшін 10 сұрақ жасап қояйық
         ]
         with open(TESTS_FILE, "w", encoding="utf-8") as f:
             json.dump(default_tests, f, ensure_ascii=False, indent=4)
@@ -101,7 +85,6 @@ def save_data(file_path, data):
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-# Сессияны басқару
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
@@ -110,6 +93,14 @@ if "test_started" not in st.session_state:
     st.session_state.test_started = False
 if "selected_test_title" not in st.session_state:
     st.session_state.selected_test_title = None
+if "test_finished" not in st.session_state:
+    st.session_state.test_finished = False
+if "last_result" not in st.session_state:
+    st.session_state.last_result = None
+if "current_question_index" not in st.session_state:
+    st.session_state.current_question_index = 0
+if "user_answers" not in st.session_state:
+    st.session_state.user_answers = {}
 
 # --- КІРУ ПАРАҒЫ ---
 def login_page():
@@ -144,12 +135,44 @@ def main_app():
         st.session_state.username = ""
         st.session_state.test_started = False
         st.session_state.selected_test_title = None
+        st.session_state.test_finished = False
+        st.session_state.user_answers = {}
         st.rerun()
         
     tests = load_data(TESTS_FILE)
     
-    # 1. ТЕСТТЕР БӨЛІМІ (АТАУЫ БОЙЫНША ТАПСЫРУ)
+    # 1. ТЕСТТЕР БӨЛІМІ
     if menu == "Тесттер":
+        
+        # СЕРТИФИКАТ БӨЛІМІ
+        if st.session_state.test_finished:
+            res = st.session_state.last_result
+            
+            st.markdown("---")
+            st.markdown("<h1 style='text-align: center; color: #4CAF50;'>🏆 СЕРТИФИКАТ 🏆</h1>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align: center; font-size: 24px;'>Осы сертификат беріледі: <b>{res['user']}</b></p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align: center; font-size: 20px;'><b>'{res['test_title']}'</b> атты тестті сәтті аяқтағаны үшін.</p>", unsafe_allow_html=True)
+            st.markdown(f"<h2 style='text-align: center; color: #2196F3;'>Жинаған ұпайыңыз: {res['score_str']}</h2>", unsafe_allow_html=True)
+            st.markdown("---")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🔄 Басқа тест таңдау"):
+                    st.session_state.test_finished = False
+                    st.session_state.test_started = False
+                    st.session_state.selected_test_title = None
+                    st.session_state.user_answers = {}
+                    st.rerun()
+            with col2:
+                if st.button("🚪 Қайта кіру / Шығу"):
+                    st.session_state.logged_in = False
+                    st.session_state.username = ""
+                    st.session_state.test_finished = False
+                    st.session_state.test_started = False
+                    st.session_state.user_answers = {}
+                    st.rerun()
+            return
+
         st.title("📝 Тесттер тізімі және тапсыру")
         
         if not tests:
@@ -167,16 +190,16 @@ def main_app():
             selected_title = st.selectbox("Тест атауы:", test_titles, key="test_title_select")
             
             selected_tests_preview = [q for q in tests if q.get("test_title") == selected_title]
-            st.info(f"Бұл тестте барлығы {len(selected_tests_preview)} сұрақ бар (Максимум 50 сұрақ).")
+            st.info(f"Бұл тестте барлығы {len(selected_tests_preview)} сұрақ бар.")
             
             if st.button("Тестті бастау"):
                 st.session_state.test_started = True
                 st.session_state.selected_test_title = selected_title
+                st.session_state.current_question_index = 0
+                st.session_state.user_answers = {}
                 st.rerun()
         else:
             current_title = st.session_state.selected_test_title
-            st.subheader(f"📚 Тест атауы: {current_title}")
-            
             current_test_questions = [q for q in tests if q.get("test_title") == current_title]
             
             if not current_test_questions:
@@ -186,40 +209,84 @@ def main_app():
                     st.rerun()
                 return
 
-            score = 0
-            with st.form(f"test_form_{current_title}"):
-                user_answers = {}
-                for i, q in enumerate(current_test_questions):
-                    st.markdown(f"**{i+1}. {q['question']}**")
-                    options = q['options']
-                    user_answers[q['id']] = st.radio("Жауапты таңдаңыз:", options, key=f"q_{q['id']}")
-                    st.write("---")
-                    
-                submitted = st.form_submit_button("Тестті аяқтау және нәтижені көру")
+            st.subheader(f"📚 Тест атауы: {current_title}")
+
+            # --- СІЗ СҰРАҒАН НӨМІРЛЕНГЕН БАТЫРМАЛАР ПАНЕЛІ (СУРЕТТЕГІДЕЙ) ---
+            st.write("Сұрақтар арасында өту үшін төмендегі батырмаларды басыңыз:")
+            cols = st.columns(min(len(current_test_questions), 10)) # Бір жолға 10-ға дейін батырма сыйғызу
+            for idx, q_item in enumerate(current_test_questions):
+                col_idx = idx % 10
+                with cols[col_idx]:
+                    btn_label = f"{idx + 1}"
+                    # Егер қазір тұрған сұрақ болса немесе жауап берілген болса көрінісін ерекшелеуге болады
+                    if st.button(btn_label, key=f"q_btn_{idx}"):
+                        st.session_state.current_question_index = idx
+                        st.rerun()
+            st.write("---")
+
+            # Ағымдағы сұрақты көрсету
+            idx = st.session_state.current_question_index
+            q = current_test_questions[idx]
+            
+            st.markdown(f"**Сұрақ {idx + 1} / {len(current_test_questions)}:**")
+            st.markdown(f"### {q['question']}")
+            
+            options = q['options']
+            current_ans = st.session_state.user_answers.get(q['id'])
+            
+            # Егер бұрын жауап берілген болса, индексін табу
+            default_ix = 0
+            if current_ans in options:
+                default_ix = options.index(current_ans)
                 
-                if submitted:
-                    for q in current_test_questions:
-                        if user_answers.get(q['id']) == q['answer']:
+            selected_option = st.radio("Жауапты таңдаңыз:", options, index=default_ix, key=f"radio_q_{q['id']}")
+            st.session_state.user_answers[q['id']] = selected_option
+            
+            st.write("---")
+            
+            # Алға / Артқа батырмалары және аяқтау батырмасы
+            c_prev, c_next, c_finish = st.columns([1, 1, 2])
+            
+            with c_prev:
+                if idx > 0:
+                    if st.button("⬅️ Артқа"):
+                        st.session_state.current_question_index -= 1
+                        st.rerun()
+            with c_next:
+                if idx < len(current_test_questions) - 1:
+                    if st.button("Келесі ➡️"):
+                        st.session_state.current_question_index += 1
+                        st.rerun()
+            with c_finish:
+                if st.button("🏁 Тестті аяқтау және Сертификат алу"):
+                    score = 0
+                    for item in current_test_questions:
+                        if st.session_state.user_answers.get(item['id']) == item['answer']:
                             score += 1
                     
                     result_str = f"{score} / {len(current_test_questions)}"
-                    st.success(f"Тест аяқталды! Сіздің нәтижеңіз ({current_title}): {result_str}")
-                    
-                    results = load_data(RESULTS_FILE)
-                    results.append({
+                    res_data = {
                         "user": st.session_state.username,
                         "test_title": current_title,
                         "score": score,
                         "total": len(current_test_questions),
                         "score_str": result_str
-                    })
+                    }
+                    
+                    results = load_data(RESULTS_FILE)
+                    results.append(res_data)
                     save_data(RESULTS_FILE, results)
+                    
+                    st.session_state.last_result = res_data
+                    st.session_state.test_finished = True
+                    st.rerun()
             
             if st.button("Басқа тест таңдауға қайту"):
                 st.session_state.test_started = False
+                st.session_state.user_answers = {}
                 st.rerun()
 
-    # 2. СҰРАҚ ҚОСУ ЖӘНЕ ӨШІРУ (МАКСИМУМ 50 СҰРАҚ ШЕКТЕУІМЕН)
+    # 2. СҰРАҚ ҚОСУ ЖӘНЕ ӨШІРУ
     elif menu == "Сұрақ қосу / Өзгерту":
         st.title("➕ Тест құрастыру және сұрақтарды басқару")
         
@@ -256,8 +323,7 @@ def main_app():
             
             with st.form("add_question_form"):
                 st.markdown("### Тесттің атауы")
-                test_title_input = st.text_input("Тест атауын енгізіңіз (мысалы: Физика 1-тоқсан):", value="")
-                
+                test_title_input = st.text_input("Тест атауын енгізіңіз:", value="")
                 subject_input = st.selectbox("Пәні:", ["Математика", "Информатика", "Физика", "Тарих", "Ағылшын тілі", "Басқа"])
                 
                 new_q = st.text_area("Сұрақ мәтіні")
@@ -267,16 +333,14 @@ def main_app():
                 c4 = st.text_input("Нұсқа D")
                 
                 correct_ans_letter = st.selectbox("Дұрыс жауаптың әрпін таңдаңыз:", ["A", "B", "C", "D"])
-                
                 add_submitted = st.form_submit_button("Сұрақты сақтау")
                 
                 if add_submitted:
                     final_test_title = test_title_input.strip() if test_title_input.strip() else "Атаусыз тест"
-                    
                     current_count_in_test = len([q for q in tests if q.get("test_title") == final_test_title])
                     
                     if current_count_in_test >= 50:
-                        st.error(f"❌ Кешіріңіз, '{final_test_title}' тест атауында сұрақтар саны максималды шектеуге (50 сұрақ) жетті!")
+                        st.error(f"❌ Кешіріңіз, '{final_test_title}' тест атауында сұрақтар саны максималды шектеуге жетті!")
                     else:
                         if final_test_title and new_q and c1 and c2:
                             options_dict = {"A": c1, "B": c2, "C": c3, "D": c4}
@@ -296,46 +360,38 @@ def main_app():
                                 }
                                 tests.append(new_question_data)
                                 save_data(TESTS_FILE, tests)
-                                st.success(f"Сәтті қосылды! Бұл тестте қазір {current_count_in_test + 1} / 50 сұрақ бар.")
+                                st.success("Сәтті қосылды!")
                         else:
-                            st.error("Тест атауын, сұрақ пен кем дегенде A және B нұсқаларын толтырыңыз!")
+                            st.error("Барлық міндетті өрістерді толтырыңыз!")
 
-    # 3. НӘТИЖЕЛЕРДІ СОЛДАН ОҢҒА ҚАРАЙ ӨСЕТІН/ТҮСЕТІН СЫЗЫҚТЫҚ ГРАФИК ТҮРІНДЕ КӨРСЕТУ
+    # 3. НӘТИЖЕЛЕР ЖӘНЕ ПРОФИЛЬДІК ГРАФИК
     elif menu == "Нәтижелер":
-        st.title("📊 Тест нәтижелері (Хронологиялық сызықтық график)")
-        results = load_data(RESULTS_FILE)
+        st.title("📊 Тест нәтижелері және психологиялық график")
         
+        accentuation_types = [
+            "Демонстративный тип", "Застревающий тип", "Педантичный тип",
+            "Возбудимый тип", "Гипертимный тип", "Дистимический тип",
+            "Тревожно-боязливый тип", "Аффективно-экзальтированный тип",
+            "Эмотивный тип", "Циклотимный тип"
+        ]
+        sample_scores = [10, 14, 14, 6, 6, 9, 12, 12, 12, 9]
+
+        st.subheader("📈 Акцентуация профилінің графигі (Үлгі бойынша)")
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(accentuation_types, sample_scores, marker='D', color='#2b5c8f', linewidth=2, markersize=6)
+        ax.set_ylim(0, 16)
+        ax.set_yticks(range(0, 18, 2))
+        ax.grid(True, linestyle='-', alpha=0.6)
+        plt.xticks(rotation=45, ha='right', fontsize=10)
+        plt.tight_layout()
+        st.pyplot(fig)
+        
+        st.write("---")
+        st.subheader("📋 Қолданушылардың нәтижелер тізімі:")
+        results = load_data(RESULTS_FILE)
         if results:
-            chart_data = []
-            for idx, r in enumerate(results, start=1):
-                score = r.get('score', 0)
-                total = r.get('total', 50)
-                percentage = (score / total) * 100 if total > 0 else 0
-                
-                if percentage < 50:
-                    status = "🔴 Төмен (<50%)"
-                elif percentage < 75:
-                    status = "🟡 Орташа (50-74%)"
-                else:
-                    status = "🟢 Жақсы (≥75%)"
-
-                step_name = f"{idx}. {r.get('test_title', 'Тест')} ({r.get('user', 'Қолданушы')})"
-
-                chart_data.append({
-                    "Қадам": step_name,
-                    "Ұпай": score,
-                    "Деңгейі": status
-                })
-            
-            df = pd.DataFrame(chart_data)
-            
-            st.subheader("📈 Көтерілу және түсу динамикасы (Сол жақтан оң жаққа):")
-            st.line_chart(df.set_index("Қадам")["Ұпай"])
-            
-            st.write("---")
-            st.subheader("📋 Толық мәліметтер кестесі:")
+            df = pd.DataFrame(results)
             st.dataframe(df)
-            
             if st.button("Барлық нәтижелерді тазарту"):
                 save_data(RESULTS_FILE, [])
                 st.rerun()
@@ -345,12 +401,10 @@ def main_app():
     # 4. ЛОГИН ЖӘНЕ ПАРОЛЬДІ ӨЗГЕРТУ
     elif menu == "Логин/Парольді өзгерту":
         st.title("⚙️ Жеке деректерді өзгерту")
-        
         users = load_data(USERS_FILE)
         current_user = st.session_state.username
         
         with st.form("change_credentials_form"):
-            st.write("Логин немесе парольді өзгерту:")
             new_username = st.text_input("Жаңа логин", value=current_user)
             old_password = st.text_input("Қазіргі пароль", type="password")
             new_password = st.text_input("Жаңа пароль", type="password")
@@ -373,7 +427,6 @@ def main_app():
                 else:
                     st.error("Қазіргі пароль қате енгізілді!")
 
-# Бағдарлама логикасы
 if not st.session_state.logged_in:
     login_page()
 else:
