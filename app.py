@@ -37,7 +37,6 @@ st.markdown("""
         background-color: #00FF66;
         color: #121212;
     }
-    /* 3D және 3 есе үлкейтілген сертификат стилі */
     .certificate {
         background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
         border: 4px solid #00FF66;
@@ -93,6 +92,14 @@ if "tests" not in st.session_state:
 if "results" not in st.session_state:
     st.session_state.results = []
 
+# 140 баллдық трекерге арналған сақтау орны
+if "score_140_history" not in st.session_state:
+    st.session_state.score_140_history = [
+        {"attempt": "1-ші сынақ", "score": 85},
+        {"attempt": "2-ші сынақ", "score": 98},
+        {"attempt": "3-ші сынақ", "score": 115}
+    ]
+
 # Егер тест басталса
 if "active_test" in st.session_state and st.session_state.active_test:
     test = st.session_state.active_test
@@ -107,26 +114,22 @@ if "active_test" in st.session_state and st.session_state.active_test:
 
     total_questions = len(test["questions"])
 
-    # Төбесіне сұрақ нөмірлері панелі (пагинация)
     st.write("Сұрақтар нөмірі:")
     cols = st.columns(min(total_questions, 10))
     for idx in range(total_questions):
         col_idx = idx % 10
         with cols[col_idx]:
-            # Егер сұрақ белгіленген болса немесе қазіргі сұрақ болса
             btn_prefix = "📌 " if idx in st.session_state.marked_questions else ""
             if st.button(f"{btn_prefix}{idx+1}", key=f"q_num_{idx}", use_container_width=True):
                 st.session_state.q_index = idx
                 st.rerun()
 
     st.markdown("---")
-
     q_idx = st.session_state.q_index
 
     if q_idx < total_questions:
         q = test["questions"][q_idx]
         
-        # Сұрақ және «Белгілеу» түймесі
         col_q_title, col_mark = st.columns([3, 1])
         with col_q_title:
             st.subheader(f"Сұрақ {q_idx + 1} / {total_questions}: {q['question']}")
@@ -141,7 +144,6 @@ if "active_test" in st.session_state and st.session_state.active_test:
                 st.rerun()
 
         st.write("Жауапты таңдаңыз:")
-        
         current_selected = st.session_state.user_answers.get(q_idx)
 
         for i, option in enumerate(q["options"]):
@@ -191,7 +193,6 @@ if "active_test" in st.session_state and st.session_state.active_test:
                 "date": datetime.now().strftime("%Y-%m-%d %H:%M")
             })
 
-        # 3D және үлкейтілген сертификат
         st.markdown(f"""
             <div class="certificate">
                 <h2>🏆 СЕРТИФИКАТ 🏆</h2>
@@ -212,9 +213,23 @@ if "active_test" in st.session_state and st.session_state.active_test:
             st.rerun()
             
 else:
-    st.sidebar.markdown("<p style='font-size: 36px; margin-bottom: 10px;'><b>Профиль</b></p>", unsafe_allow_html=True)
+    # Сайдбардағы үлкейтілген Профиль және 140 алған балдар бөлімі
+    st.sidebar.markdown("<p style='font-size: 32px; margin-bottom: 5px;'><b>Профиль</b></p>", unsafe_allow_html=True)
     st.sidebar.image(st.session_state.avatar, width=120)
-    st.sidebar.markdown(f"<p style='font-size: 26px; margin-top: 10px; margin-bottom: 20px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<p style='font-size: 22px; margin-top: 5px; margin-bottom: 10px;'><b>{st.session_state.username}</b></p>", unsafe_allow_html=True)
+    
+    # --- 140 балдық нәтижелер бөлімі сайдбарда ---
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("<p style='font-size: 18px; color: #00FF66; margin-bottom: 5px;'>🎯 <b>140 алған балдар</b></p>", unsafe_allow_html=True)
+    
+    # Балл қосу формасы
+    with st.sidebar.form("add_140_score"):
+        new_attempt_name = st.text_input("Тест атауы / Реті", f"Қорытынды №{len(st.session_state.score_140_history)+1}")
+        new_score = st.number_input("Жинаған балл (макс 140)", min_value=0, max_value=140, value=100)
+        submitted_score = st.form_submit_button("Баллды қосу")
+        if submitted_score:
+            st.session_state.score_140_history.append({"attempt": new_attempt_name, "score": new_score})
+            st.rerun()
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("<p style='font-size: 18px; margin-bottom: 10px;'><b>Мәзір</b></p>", unsafe_allow_html=True)
@@ -230,6 +245,15 @@ else:
     if menu == "Тесттер тізімі":
         st.header("Инфо-Мат Бағыты (Кезеңдерге бөлінген тесттер)")
         
+        # --- Негізгі бетте 140 балл графигін көрсету ---
+        st.subheader("📊 140 балдық жүйе бойынша сіздің өсу динамикаңыз")
+        if st.session_state.score_140_history:
+            df_140 = pd.DataFrame(st.session_state.score_140_history)
+            chart_df = df_140.set_index("attempt")[["score"]]
+            st.line_chart(chart_df)
+            st.dataframe(df_140.rename(columns={"attempt": "Сынақ түрі", "score": "Жинаған балл"}), use_container_width=True)
+        
+        st.markdown("---")
         subjects = ["Қазақстан тарихы", "Математикалық сауаттылық", "Математика", "Информатика"]
         selected_subject = st.selectbox("Бағытты / Пәнді таңдаңыз:", subjects)
         
