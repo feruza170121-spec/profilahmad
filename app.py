@@ -11,10 +11,22 @@ USERS_FILE = "users.json"
 TESTS_FILE = "tests.json"
 RESULTS_FILE = "results.json"
 
-# Бастапқы файлдарды құру (егер жоқ болса)
+# Бастапқы файлдарды құру және әрқашан дұрыс логин-парольді қамтамасыз ету
 def init_json_files():
-    if not os.path.exists(USERS_FILE):
-        default_users = {"admin": "secret123"}
+    # Админ паролі қате шықпас үшін әрқашан жаңартылып отырады
+    default_users = {"admin": "secret123"}
+    if os.path.exists(USERS_FILE):
+        try:
+            with open(USERS_FILE, "r", encoding="utf-8") as f:
+                users = json.load(f)
+                if not isinstance(users, dict) or "admin" not in users:
+                    users = default_users
+                    with open(USERS_FILE, "w", encoding="utf-8") as wf:
+                        json.dump(users, wf, ensure_ascii=False, indent=4)
+        except:
+            with open(USERS_FILE, "w", encoding="utf-8") as f:
+                json.dump(default_users, f, ensure_ascii=False, indent=4)
+    else:
         with open(USERS_FILE, "w", encoding="utf-8") as f:
             json.dump(default_users, f, ensure_ascii=False, indent=4)
             
@@ -256,14 +268,14 @@ def main_app():
                         else:
                             st.error("Тест атауын, сұрақ пен кем дегенде A және B нұсқаларын толтырыңыз!")
 
-    # 3. НӘТИЖЕЛЕРДІ СЫЗЫҚТЫҚ ГРАФИК (LINE CHART) ТҮРІНДЕ КӨРСЕТУ
+    # 3. НӘТИЖЕЛЕРДІ СОЛДАН ОҢҒА ҚАРАЙ ӨСЕТІН/ТҮСЕТІН СЫЗЫҚТЫҚ ГРАФИК ТҮРІНДЕ КӨРСЕТУ
     elif menu == "Нәтижелер":
-        st.title("📊 Тест нәтижелері (Сызықтық график)")
+        st.title("📊 Тест нәтижелері (Хронологиялық сызықтық график)")
         results = load_data(RESULTS_FILE)
         
         if results:
             chart_data = []
-            for r in results:
+            for idx, r in enumerate(results, start=1):
                 score = r.get('score', 0)
                 total = r.get('total', 50)
                 percentage = (score / total) * 100 if total > 0 else 0
@@ -275,18 +287,18 @@ def main_app():
                 else:
                     status = "🟢 Жақсы (≥75%)"
 
+                step_name = f"{idx}. {r.get('test_title', 'Тест')} ({r.get('user', 'Қолданушы')})"
+
                 chart_data.append({
-                    "Қолданушы": r.get('user', 'Белгісіз'),
-                    "Тест атауы": r.get('test_title', 'Белгісіз тест'),
+                    "Қадам": step_name,
                     "Ұпай": score,
                     "Деңгейі": status
                 })
             
             df = pd.DataFrame(chart_data)
             
-            st.subheader("📈 Сызықтық көрсеткіш (Өсу және кему бағыты):")
-            # st.line_chart арқылы график сызық түрінде көрсетіледі
-            st.line_chart(df.set_index("Қолданушы")["Ұпай"])
+            st.subheader("📈 Көтерілу және түсу динамикасы (Сол жақтан оң жаққа):")
+            st.line_chart(df.set_index("Қадам")["Ұпай"])
             
             st.write("---")
             st.subheader("📋 Толық мәліметтер кестесі:")
